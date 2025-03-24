@@ -1,11 +1,3 @@
-"""
-Module for auto-testing student projects.
-This is based on the file from Francois Fleuret's
-"Deep Learning Course": https://fleuret.org/dlc/.
-
-This is the Milestone 1 version.
-"""
-
 import re
 import sys
 import os
@@ -79,14 +71,12 @@ class TestProject(unittest.TestCase):
         training_data = np.random.rand(N, D)
         training_labels = np.random.randint(0, D, N)
         test_data = np.random.rand(N, D)
-        with no_print():
-            pred_labels = method.fit(training_data, training_labels)
+        pred_labels = method.fit(training_data, training_labels)
         self.assertIsInstance(pred_labels, np.ndarray,
                               f"{name}.{class_name}.fit() should output an array, not {type(pred_labels)}")
         self.assertEqual(pred_labels.shape, training_labels.shape,
                          f"{name}.{class_name}.fit() output has wrong shape ({pred_labels.shape} != {training_labels.shape})")
-        with no_print():
-            pred_labels = method.predict(test_data)
+        pred_labels = method.predict(test_data)
         self.assertIsInstance(pred_labels, np.ndarray,
                               f"{name}.{class_name}.predict() should output an array, not {type(pred_labels)}")
         self.assertEqual(pred_labels.shape, training_labels.shape,
@@ -112,9 +102,8 @@ class TestProject(unittest.TestCase):
         training_labels = np.array([0, 1, 2, 3])
         test_data = np.array([[0., 0.1], [1.2, -0.2], [0.1, 0.9], [20., 20.]])
         test_labels = np.array([0, 1, 2, 3])
-        with no_print():
-            pred_labels_train = knn_model.fit(training_data, training_labels)
-            pred_labels_test = knn_model.predict(test_data)
+        pred_labels_train = knn_model.fit(training_data, training_labels)
+        pred_labels_test = knn_model.predict(test_data)
         self.assertTrue(np.equal(pred_labels_train, training_labels).all(), f"KNN.fit() is not working on dummy data")
         self.assertTrue(np.equal(pred_labels_test, test_labels).all(), f"KNN.predict() is not working on dummy data")
 
@@ -134,9 +123,8 @@ class TestProject(unittest.TestCase):
         training_labels = (training_data[:, 0] > 0.).astype(int)
         test_data = np.array([-10., -5., -1., 1., 5., 10.])[:, None]
         test_labels = (test_data[:, 0] > 0.).astype(int)
-        with no_print():
-            pred_labels_train = logistic_regression.fit(training_data, training_labels)
-            pred_labels_test = logistic_regression.predict(test_data)
+        pred_labels_train = logistic_regression.fit(training_data, training_labels)
+        pred_labels_test = logistic_regression.predict(test_data)
         self.assertTrue((pred_labels_train == training_labels).all(),
                         f"LogisticRegression.fit() is not working on dummy data")
         self.assertTrue((pred_labels_test == test_labels).all(),
@@ -154,9 +142,8 @@ class TestProject(unittest.TestCase):
         training_labels = 2 * training_data
         test_data = np.random.rand(N, 1) * 2 - 1
         test_labels = 2 * test_data
-        with no_print():
-            pred_labels_train = LR_model.fit(training_data, training_labels)
-            pred_labels_test = LR_model.predict(test_data)
+        pred_labels_train = LR_model.fit(training_data, training_labels)
+        pred_labels_test = LR_model.predict(test_data)
         self.assertTrue(np.isclose(pred_labels_train, training_labels).all(),
                         f"LinearRegression.fit() is not working on dummy data")
         self.assertTrue(np.isclose(pred_labels_test, test_labels).all(),
