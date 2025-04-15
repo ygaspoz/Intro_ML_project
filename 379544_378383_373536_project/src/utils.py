@@ -1,4 +1,5 @@
 import numpy as np
+import matplotlib.pyplot as plt
 
 
 # Generally utilizes
@@ -142,3 +143,31 @@ def mse_fn(pred, gt):
     loss = (pred - gt) ** 2
     loss = np.mean(loss)
     return loss
+
+
+def plot_confusion_matrix(y_true, y_pred, classes):
+    """
+    Plot a confusion matrix.
+
+    Args:
+        y_true (array): True labels.
+        y_pred (array): Predicted labels.
+        classes (list): List of class names.
+    """
+    num_classes = len(classes)
+    cm = np.zeros((num_classes, num_classes), dtype=int)
+    for t, p in zip(y_true, y_pred):
+        cm[t, p] += 1
+
+    plt.figure(figsize=(8, 6))
+    plt.imshow(cm, interpolation='nearest', cmap=plt.cm.Blues)
+    plt.title("Confusion Matrix")
+    plt.colorbar()
+    tick_marks = np.arange(len(classes))
+    plt.xticks(tick_marks, classes, rotation=45)
+    plt.yticks(tick_marks, classes)
+
+    plt.ylabel("True Label")
+    plt.xlabel("Predicted Label")
+    plt.tight_layout()
+    plt.show()

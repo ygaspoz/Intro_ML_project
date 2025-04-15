@@ -24,7 +24,7 @@ class LogisticRegression(object):
     Logistic regression classifier.
     """
 
-    def __init__(self, lr, max_iters=500, verbose=False, print_rate=100):
+    def __init__(self, lr, max_iters=500, verbose=0):
         """
         Initialize the new object (see dummy_methods.py)
         and set its arguments.
@@ -39,7 +39,6 @@ class LogisticRegression(object):
         self.lr = lr
         self.max_iters = max_iters
         self.verbose = verbose
-        self.print_rate = print_rate
 
     def fit(self, training_data: np.array, training_labels: np.array):
         """
@@ -62,7 +61,7 @@ class LogisticRegression(object):
             pred_labels = onehot_to_label(f_softmax(training_data, weights))
             if accuracy_fn(pred_labels, training_labels) == 1:
                 break
-            if self.verbose and iteration % self.print_rate == 0:
+            if self.verbose != 0 and iteration % self.verbose == 0:
                 print(f"Iteration {iteration}, accuracy: {accuracy_fn(pred_labels, training_labels)}, loss: {loss_logistic_multi(training_data, label_to_onehot(training_labels, C), weights)}")
         self.weights = weights
 

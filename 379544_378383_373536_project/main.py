@@ -7,8 +7,10 @@ from src.methods.dummy_methods import DummyClassifier
 from src.methods.logistic_regression import LogisticRegression
 from src.methods.knn import KNN
 from src.methods.kmeans import KMeans
-from src.utils import normalize_fn, append_bias_term, accuracy_fn, macrof1_fn, mse_fn, train_test_split
+from src.utils import normalize_fn, append_bias_term, accuracy_fn, macrof1_fn, mse_fn, train_test_split, plot_confusion_matrix
 import os
+import time
+
 
 np.random.seed(100)
 
@@ -41,35 +43,19 @@ def main(args):
     ## 2. Then we must prepare it. This is where you can create a validation set, normalize, add bias, etc.
     # Make a validation set (it can overwrite xtest, ytest)
     if not args.test:
-        xtrain, xval, ytrain, yval = train_test_split(xtrain, ytrain, test_size=0.2, random_state=42)
+        xtrain, xtest, ytrain, ytest = train_test_split(xtrain, ytrain, test_size=0.2, random_state=42)
 
-        # Normalize only the numerical features
-        means = np.mean(xtrain[:, num_indices], axis=0, keepdims=True)
-        stds = np.std(xtrain[:, num_indices], axis=0, keepdims=True)
-        xtrain[:, num_indices] = normalize_fn(xtrain[:, num_indices], means, stds)
-        xval[:, num_indices] = normalize_fn(xval[:, num_indices], means, stds)
-        xtest[:, num_indices] = normalize_fn(xtest[:, num_indices], means, stds)
+    # Normalize the data
+    means = np.mean(xtrain[:, num_indices], axis=0, keepdims=True)
+    stds = np.std(xtrain[:, num_indices], axis=0, keepdims=True)
+    xtrain[:, num_indices] = normalize_fn(xtrain[:, num_indices], means, stds)
+    xtest[:, num_indices] = normalize_fn(xtest[:, num_indices], means, stds)
 
-        # Append bias term only to the numerical features
-        xtrain_num = append_bias_term(xtrain[:, num_indices])
-        xval_num = append_bias_term(xval[:, num_indices])
-        xtest_num = append_bias_term(xtest[:, num_indices])
+    xtrain_num = append_bias_term(xtrain[:, num_indices])
+    xtest_num = append_bias_term(xtest[:, num_indices])
 
-        # Concatenate the processed numerical features back with the categorical features
-        xtrain = np.concatenate([xtrain_num, xtrain[:, cat_indices]], axis=1)
-        xval = np.concatenate([xval_num, xval[:, cat_indices]], axis=1)
-        xtest = np.concatenate([xtest_num, xtest[:, cat_indices]], axis=1)
-    else:
-        means = np.mean(xtrain[:, num_indices], axis=0, keepdims=True)
-        stds = np.std(xtrain[:, num_indices], axis=0, keepdims=True)
-        xtrain[:, num_indices] = normalize_fn(xtrain[:, num_indices], means, stds)
-        xtest[:, num_indices] = normalize_fn(xtest[:, num_indices], means, stds)
-
-        xtrain_num = append_bias_term(xtrain[:, num_indices])
-        xtest_num = append_bias_term(xtest[:, num_indices])
-
-        xtrain = np.concatenate([xtrain_num, xtrain[:, cat_indices]], axis=1)
-        xtest = np.concatenate([xtest_num, xtest[:, cat_indices]], axis=1)
+    xtrain = np.concatenate([xtrain_num, xtrain[:, cat_indices]], axis=1)
+    xtest = np.concatenate([xtest_num, xtest[:, cat_indices]], axis=1)
 
 
     ### WRITE YOUR CODE HERE to do any other data processing
@@ -89,21 +75,29 @@ def main(args):
 
     ## 4. Train and evaluate the method
     # Fit (:=train) the method on the training data for classification task
+    start_time_train = time.time()
     preds_train = method_obj.fit(xtrain, ytrain)
+    end_time_train = time.time()
 
     # Predict on unseen data
+    start_time_predict = time.time()
     preds = method_obj.predict(xtest)
+    end_time_predict = time.time()
 
     # Report results: performance on train and valid/test sets
     acc = accuracy_fn(preds_train, ytrain)
     macrof1 = macrof1_fn(preds_train, ytrain)
-    print(f"\nTrain set: accuracy = {acc:.3f}% - F1-score = {macrof1:.6f}")
+    print(f"\nTrain set: accuracy = {acc:.3f}% - F1-score = {macrof1:.6f} - time = {end_time_train - start_time_train:.3f}s")
 
     acc = accuracy_fn(preds, ytest)
     macrof1 = macrof1_fn(preds, ytest)
-    print(f"Test set:  accuracy = {acc:.3f}% - F1-score = {macrof1:.6f}")
+    print(f"Test set:  accuracy = {acc:.3f}% - F1-score = {macrof1:.6f} - time = {end_time_predict - start_time_predict:.3f}s")
 
     ### WRITE YOUR CODE HERE if you want to add other outputs, visualization, etc.
+    classes = np.unique(ytrain)
+    ytest = np.array(ytest, dtype=int)
+    preds = np.array(preds, dtype=int)
+    plot_confusion_matrix(ytest, preds, classes=classes)
 
 
 if __name__ == "__main__":
@@ -145,8 +139,9 @@ if __name__ == "__main__":
 
     parser.add_argument(
         "--verbose",
-        action="store_true",
-        help="print more information during training",
+        type=int,
+        default=0,
+        help="print stats every N iterations (0 for no verbose output)",
     )
 
     # MS2 arguments
