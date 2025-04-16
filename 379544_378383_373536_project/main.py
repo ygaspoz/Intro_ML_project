@@ -1,6 +1,7 @@
 import argparse
 
 import numpy as np
+from matplotlib import pyplot as plt
 
 from src.data import load_data
 from src.methods.dummy_methods import DummyClassifier
@@ -11,9 +12,7 @@ from src.utils import normalize_fn, append_bias_term, accuracy_fn, macrof1_fn, m
 import os
 import time
 
-
 np.random.seed(100)
-
 
 def main(args):
     """
@@ -57,7 +56,6 @@ def main(args):
     xtrain = np.concatenate([xtrain_num, xtrain[:, cat_indices]], axis=1)
     xtest = np.concatenate([xtest_num, xtest[:, cat_indices]], axis=1)
 
-
     ### WRITE YOUR CODE HERE to do any other data processing
 
     ## 3. Initialize the method you want to use.
@@ -72,6 +70,9 @@ def main(args):
 
     elif args.method == "logistic_regression":
         method_obj = LogisticRegression(lr=args.lr, max_iters=args.max_iters, verbose=args.verbose)
+
+    elif args.method == "kmeans":
+        method_obj = KMeans(K=2, max_iters=args.max_iters) # Use optimal K found
 
     ## 4. Train and evaluate the method
     # Fit (:=train) the method on the training data for classification task
@@ -117,7 +118,8 @@ if __name__ == "__main__":
         "--data_type", default="features", type=str, help="features/original(MS2)"
     )
     parser.add_argument(
-        "--K", type=int, default=1, help="number of neighboring datapoints used for knn"
+        "--K", type=int, default=1,
+        help="number of neighboring datapoints used for knn OR number of clusters for kmeans"
     )
     parser.add_argument(
         "--lr",
