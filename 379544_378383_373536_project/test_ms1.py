@@ -37,6 +37,7 @@ class NoHidePrints:
     def __exit__(self, exc_type, exc_val, exc_tb):
         pass
 
+no_print = HidePrints
 
 class TestProject(unittest.TestCase):
 
@@ -46,6 +47,7 @@ class TestProject(unittest.TestCase):
 
     def test_1_folder_structure(self):
         """Test the framework structure (folder and files)."""
+        project_path = Path(".")
         self.title("Testing folder structure")
         self.assertTrue(project_path.exists(), f"No folder found at {project_path}")
 
