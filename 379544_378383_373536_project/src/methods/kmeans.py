@@ -1,66 +1,85 @@
 import numpy as np
-import itertools
-
 
 class KMeans(object):
     """
-    kNN classifier object.
+    kMeans classifier object.
     """
 
-    def __init__(self, k=2, max_iters=100):
+    def __init__(self, k=10, max_iters=100):
         """
         Call set_arguments function of this class.
         """
         self.k = k
         self.max_iters = max_iters
         self.centroids = None
-        self.best_permutation = None
+        self.cluster_to_label = None
+        self.sum_of_squared_distances = None
 
     def fit(self, training_data, training_labels):
         """
-        Trains the model, returns predicted labels for training data.
-        Hint:
-            (1) Since Kmeans is unsupervised clustering, we don't need the labels for training. But you may want to use it to determine the number of clusters.
-            (2) Kmeans is sensitive to initialization. You can try multiple random initializations when using this classifier.
+        Trains the KMeans model, returns predicted labels for the training data.
 
         Arguments:
             training_data (np.array): training data of shape (N,D)
-            training_labels (np.array): labels of shape (N,).
-        Returns:
-            pred_labels (np.array): labels of shape (N,)
-        """
+            training_labels (np.array): labels of shape (N,)
 
+        Returns:
+            pred_labels (np.array): predicted labels for the training data (N,)
+        """
         N, D = training_data.shape
 
-        # Initialize centroids by selecting K random data points
-        random_indices = np.random.choice(N, self.k, replace=False)
-        centroids = training_data[random_indices]
-
+        best_sum_of_squared_distances = np.inf
         best_centroids = None
-        best_permutation = None
+        best_labels = None
+        best_cluster_to_label = None
 
-        for _ in range(self.max_iters):
-            # Distances from each data point to each centroid
-            distances = np.linalg.norm(training_data[:, np.newaxis] - centroids, axis=2)
+        # Try multiple random initializations
+        for _ in range(10):
+            # Initialize centroids by selecting K random data points
+            random_indices = np.random.choice(N, self.k, replace=False)
+            centroids = training_data[random_indices]
 
-            # Assign each point to the nearest centroid (this is the label)
-            labels = np.argmin(distances, axis=1)
+            for _ in range(self.max_iters):
+                # Distances from each data point to each centroid
+                distances = np.linalg.norm(training_data[:, np.newaxis] - centroids, axis=2)
 
-            # Update centroids as the mean of the assigned points
-            new_centroids = np.array([training_data[labels == k].mean(axis=0) for k in range(self.k)])
+                # Assign each point to the nearest centroid (this is the label)
+                labels = np.argmin(distances, axis=1)
 
-            # If centroids do not change, break the loop
-            if np.allclose(centroids, new_centroids):  # => Convergence
-                break
+                # Update centroids as the mean of the assigned points
+                new_centroids = np.array([training_data[labels == k].mean(axis=0) for k in range(self.k)])
 
-            centroids = new_centroids
+                # If centroids do not change, break the loop
+                if np.allclose(centroids, new_centroids):  # => Convergence
+                    break
 
-        # Store the best centroids and permutation found
-        self.centroids = centroids
-        self.best_permutation = labels
+                centroids = new_centroids
 
-        # Return the predicted labels based on the best permutation
-        pred_labels = labels  # These are the cluster assignments for each data point
+            # Compute "inertia" (sum of squared distances to centroids)
+            sum_of_squared_distances = np.sum((training_data - centroids[labels]) ** 2)
+
+            # If this initialization is better (lower inertia), keep it
+            if sum_of_squared_distances < best_sum_of_squared_distances:
+                best_sum_of_squared_distances = sum_of_squared_distances
+                best_centroids = centroids
+                best_labels = labels
+
+                # Map each cluster to the most frequent class label in it
+                cluster_to_label = {}
+                for k in range(self.k):
+                    if np.any(labels == k):
+                        cluster_labels = training_labels[labels == k]
+                        most_common_label = np.bincount(cluster_labels.astype(int)).argmax()
+                        cluster_to_label[k] = most_common_label
+                    else:
+                        cluster_to_label[k] = -1
+
+                best_cluster_to_label = cluster_to_label
+
+        self.centroids = best_centroids
+        self.cluster_to_label = best_cluster_to_label
+
+        pred_labels = np.array([self.cluster_to_label[label] for label in best_labels])
         return pred_labels
 
     def predict(self, test_data):
@@ -73,14 +92,12 @@ class KMeans(object):
             test_labels (np.array): labels of shape (N,)
         """
         # Calculate distances from each test point to each centroid
-        # Distances is of shape (N, K) where N is the number of test points and K is the number of centroids
-        # With each element being the distance from the test point to the centroid
         distances = np.linalg.norm(test_data[:, np.newaxis] - self.centroids, axis=2)
 
         # Assign each test point to the nearest centroid
-        test_labels = np.argmin(distances, axis=1)
+        test_cluster_labels = np.argmin(distances, axis=1)
 
-        # Apply the best permutation found during training
-        test_labels = np.array([self.best_permutation[label] for label in test_labels])
+        # Map each test point's cluster to the correct class label
+        test_labels = np.array([self.cluster_to_label[label] for label in test_cluster_labels])
 
         return test_labels

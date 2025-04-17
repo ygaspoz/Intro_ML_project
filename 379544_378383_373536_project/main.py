@@ -72,10 +72,16 @@ def main(args):
         method_obj = LogisticRegression(lr=args.lr, max_iters=args.max_iters, verbose=args.verbose)
 
     elif args.method == "kmeans":
-        method_obj = KMeans(K=2, max_iters=args.max_iters) # Use optimal K found
+        if args.K == 1:
+            method_obj = KMeans()
+        else:
+            method_obj = KMeans(k=args.K, max_iters=args.max_iters)
 
     elif args.method == "knn":
-        method_obj = KNN()
+        if args.K == 1:
+            method_obj = KNN()
+        else:
+            method_obj = KNN(k=args.K)
 
     ## 4. Train and evaluate the method
     # Fit (:=train) the method on the training data for classification task
