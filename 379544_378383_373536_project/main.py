@@ -74,6 +74,9 @@ def main(args):
     elif args.method == "kmeans":
         method_obj = KMeans(K=2, max_iters=args.max_iters) # Use optimal K found
 
+    elif args.method == "knn":
+        method_obj = KNN()
+
     ## 4. Train and evaluate the method
     # Fit (:=train) the method on the training data for classification task
     start_time_train = time.time()
