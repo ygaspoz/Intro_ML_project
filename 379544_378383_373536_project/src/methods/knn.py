@@ -1,16 +1,22 @@
 import numpy as np
+from ..helpers.knn_helper import *
+
 
 class KNN(object):
     """
         kNN classifier object.
     """
 
-    def __init__(self, k=1, task_kind = "classification"):
+    def __init__(self, k=3, task_kind="classification"):
         """
             Call set_arguments function of this class.
         """
         self.k = k
-        self.task_kind =task_kind
+        self.task_kind = task_kind
+        self.x_train = None
+        self.mean = None
+        self.std = None
+        self.y_train = None
 
     def fit(self, training_data, training_labels):
         """
@@ -27,11 +33,10 @@ class KNN(object):
                 pred_labels (np.array): labels of shape (N,)
         """
 
-        ##
-        ###
-        #### YOUR CODE HERE!
-        ###
-        ##
+        self.x_train, self.mean, self.std = normalize(training_data)
+        self.y_train = training_labels
+        pred_labels = self.predict(training_data)
+
         return pred_labels
 
     def predict(self, test_data):
@@ -43,9 +48,7 @@ class KNN(object):
             Returns:
                 test_labels (np.array): labels of shape (N,)
         """
-        ##
-        ###
-        #### YOUR CODE HERE!
-        ###
-        ##
+        normalized, _, _ = normalize(test_data, mean=self.mean, std=self.std)
+        test_labels = np.apply_along_axis(knn_helper, 1, normalized, self.x_train, self.y_train, self.k)
+
         return test_labels
