@@ -7,11 +7,11 @@ class KMeans(object):
     kNN classifier object.
     """
 
-    def __init__(self, K, max_iters):
+    def __init__(self, k=2, max_iters=100):
         """
         Call set_arguments function of this class.
         """
-        self.K = K
+        self.k = k
         self.max_iters = max_iters
         self.centroids = None
         self.best_permutation = None
@@ -33,7 +33,7 @@ class KMeans(object):
         N, D = training_data.shape
 
         # Initialize centroids by selecting K random data points
-        random_indices = np.random.choice(N, self.K, replace=False)
+        random_indices = np.random.choice(N, self.k, replace=False)
         centroids = training_data[random_indices]
 
         best_centroids = None
@@ -47,7 +47,7 @@ class KMeans(object):
             labels = np.argmin(distances, axis=1)
 
             # Update centroids as the mean of the assigned points
-            new_centroids = np.array([training_data[labels == k].mean(axis=0) for k in range(self.K)])
+            new_centroids = np.array([training_data[labels == k].mean(axis=0) for k in range(self.k)])
 
             # If centroids do not change, break the loop
             if np.allclose(centroids, new_centroids):  # => Convergence
