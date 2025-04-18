@@ -5,15 +5,18 @@ class KMeans(object):
     kMeans classifier object.
     """
 
-    def __init__(self, k=10, max_iters=100):
+    def __init__(self, k=10, max_iters=100, n_init=10):
         """
         Call set_arguments function of this class.
         """
         self.k = k
         self.max_iters = max_iters
+        # number of random starts; we'll keep the run with the lowest inertia to find a better clustering
+        self.n_init = n_init
+
         self.centroids = None
         self.cluster_to_label = None
-        self.sum_of_squared_distances = None
+        self.sum_of_squared_distances = None # inertia of best run
 
     def fit(self, training_data, training_labels):
         """
@@ -28,59 +31,55 @@ class KMeans(object):
         """
         N, D = training_data.shape
 
-        best_sum_of_squared_distances = np.inf
+        best_inertia = np.inf
         best_centroids = None
         best_labels = None
         best_cluster_to_label = None
 
-        # Try multiple random initializations
-        for _ in range(10):
-            # Initialize centroids by selecting K random data points
-            random_indices = np.random.choice(N, self.k, replace=False)
-            centroids = training_data[random_indices]
+        global_majority = np.bincount(training_labels.astype(int)).argmax()  # fallback label if cluster empty
+
+        for _ in range(self.n_init):
+            picks = np.random.choice(N, self.k, replace=False)
+            centroids = training_data[picks].copy()
 
             for _ in range(self.max_iters):
-                # Distances from each data point to each centroid
                 distances = np.linalg.norm(training_data[:, np.newaxis] - centroids, axis=2)
-
-                # Assign each point to the nearest centroid (this is the label)
                 labels = np.argmin(distances, axis=1)
 
-                # Update centroids as the mean of the assigned points
-                new_centroids = np.array([training_data[labels == k].mean(axis=0) for k in range(self.k)])
+                new_centroids = centroids.copy()
+                for cluster_idx in range(self.k):
+                    members = training_data[labels == cluster_idx]
+                    if members.size:
+                        new_centroids[cluster_idx] = members.mean(axis=0)
+                    else:
+                        # leave centroid unchanged to prevent NaN
+                        pass
 
-                # If centroids do not change, break the loop
-                if np.allclose(centroids, new_centroids):  # => Convergence
+                if np.allclose(centroids, new_centroids):
                     break
-
                 centroids = new_centroids
 
-            # Compute "inertia" (sum of squared distances to centroids)
-            sum_of_squared_distances = np.sum((training_data - centroids[labels]) ** 2)
+            inertia = np.sum((training_data - centroids[labels]) ** 2)
 
-            # If this initialization is better (lower inertia), keep it
-            if sum_of_squared_distances < best_sum_of_squared_distances:
-                best_sum_of_squared_distances = sum_of_squared_distances
-                best_centroids = centroids
-                best_labels = labels
+            if inertia < best_inertia:
+                best_inertia = inertia
+                best_centroids = centroids.copy()
+                best_labels = labels.copy()
 
-                # Map each cluster to the most frequent class label in it
-                cluster_to_label = {}
-                for k in range(self.k):
-                    if np.any(labels == k):
-                        cluster_labels = training_labels[labels == k]
-                        most_common_label = np.bincount(cluster_labels.astype(int)).argmax()
-                        cluster_to_label[k] = most_common_label
+                mapping = {}
+                for cluster_idx in range(self.k):
+                    members = training_labels[labels == cluster_idx]
+                    if members.size:
+                        mapping[cluster_idx] = np.bincount(members.astype(int)).argmax()
                     else:
-                        cluster_to_label[k] = -1
-
-                best_cluster_to_label = cluster_to_label
+                        mapping[cluster_idx] = global_majority  # use overall majority for empty cluster
+                best_cluster_to_label = mapping
 
         self.centroids = best_centroids
         self.cluster_to_label = best_cluster_to_label
+        self.sum_of_squared_distances = best_inertia  # inertia of best run
 
-        pred_labels = np.array([self.cluster_to_label[label] for label in best_labels])
-        return pred_labels
+        return np.array([self.cluster_to_label[c] for c in best_labels])
 
     def predict(self, test_data):
         """
@@ -91,13 +90,6 @@ class KMeans(object):
         Returns:
             test_labels (np.array): labels of shape (N,)
         """
-        # Calculate distances from each test point to each centroid
         distances = np.linalg.norm(test_data[:, np.newaxis] - self.centroids, axis=2)
-
-        # Assign each test point to the nearest centroid
         test_cluster_labels = np.argmin(distances, axis=1)
-
-        # Map each test point's cluster to the correct class label
-        test_labels = np.array([self.cluster_to_label[label] for label in test_cluster_labels])
-
-        return test_labels
+        return np.array([self.cluster_to_label[label] for label in test_cluster_labels])
