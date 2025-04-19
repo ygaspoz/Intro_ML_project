@@ -1,4 +1,6 @@
 import numpy as np
+from ..helpers.normalize_functions import normalize
+
 
 class KMeans(object):
     """
@@ -18,6 +20,9 @@ class KMeans(object):
         self.cluster_to_label = None
         self.sum_of_squared_distances = None # inertia of best run
 
+        self.mean = None
+        self.std = None
+
     def fit(self, training_data, training_labels):
         """
         Trains the KMeans model, returns predicted labels for the training data.
@@ -30,6 +35,7 @@ class KMeans(object):
             pred_labels (np.array): predicted labels for the training data (N,)
         """
         N, D = training_data.shape
+        training_data, self.mean, self.std  = normalize(training_data)
 
         best_inertia = np.inf
         best_centroids = None
@@ -90,6 +96,7 @@ class KMeans(object):
         Returns:
             test_labels (np.array): labels of shape (N,)
         """
+        test_data, _, _ = normalize(test_data, mean=self.mean, std=self.std)
         distances = np.linalg.norm(test_data[:, np.newaxis] - self.centroids, axis=2)
         test_cluster_labels = np.argmin(distances, axis=1)
         return np.array([self.cluster_to_label[label] for label in test_cluster_labels])
