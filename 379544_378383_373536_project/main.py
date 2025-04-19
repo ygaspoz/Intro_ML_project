@@ -16,6 +16,8 @@ np.random.seed(100)
 
 # If the user does not specify a tuned K for KMeans, this default will be used when tuning.
 IDEAL_K_KMeans = 4
+# If the user does not specify a k for KNN, this default will be used
+IDEAL_K_KNN = 3
 
 def main(args):
     """
@@ -81,6 +83,9 @@ def main(args):
         elbow_plot(xtrain, ytrain, args.K, args.max_iters)
         return
 
+    if args.method == "knn" and args.K == 1:
+        args.K = IDEAL_K_KNN
+
     # Use NN (FOR MS2!)
     if args.method == "nn":
         raise NotImplementedError("NN not implemented in MS1.")
@@ -90,7 +95,7 @@ def main(args):
     elif args.method == "logistic_regression":
         method_obj = LogisticRegression(lr=args.lr, max_iters=args.max_iters, verbose=args.verbose)
     elif args.method == "kmeans":
-        method_obj = KMeans(k=args.K, max_iters=args.max_iters)
+        method_obj = KMeans(k=args.K, max_iters=args.max_iters, n_init=args.n_init)
     elif args.method == "knn":
         method_obj = KNN(k=args.K)
     else:
@@ -173,6 +178,12 @@ if __name__ == "__main__":
         "--tune_kmeans",
         action="store_true",
         help="automatically tune K for KMeans via macro F1 on validation"
+    )
+    parser.add_argument(
+        "--n_init",
+        type=int,
+        default=10,
+        help="number of random initializations for KMeans (default: 10)"
     )
 
     # MS2 arguments
