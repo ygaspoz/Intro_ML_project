@@ -2,6 +2,7 @@ import argparse
 
 import numpy as np
 
+from src.tuning.tune_knn import tune_knn
 from src.helpers.kmeans_helper import elbow_plot, tune_kmeans
 from src.data import load_data
 from src.methods.dummy_methods import DummyClassifier
@@ -72,12 +73,7 @@ def main(args):
         best_k, best_f1 = tune_kmeans(xtrain, ytrain, args.K, args.max_iters)
         print(f"Tuned KMeans: best k = {best_k}, best macro-F1 = {best_f1:.6f}")
         method_obj = KMeans(k=best_k, max_iters=args.max_iters)
-        method_obj.fit(xtrain, ytrain)
-        preds = method_obj.predict(xtest)
-        acc = accuracy_fn(preds, ytest)
-        macrof1_score = macrof1_fn(preds, ytest)
-        print(f"Test set:  accuracy = {acc:.3f}% - F1-score = {macrof1_score:.6f}")
-        return
+
 
     if args.method == "kmeans" and args.elbow:
         elbow_plot(xtrain, ytrain, args.K, args.max_iters)
@@ -97,7 +93,13 @@ def main(args):
     elif args.method == "kmeans":
         method_obj = KMeans(k=args.K, max_iters=args.max_iters, n_init=args.n_init)
     elif args.method == "knn":
-        method_obj = KNN(k=args.K)
+        if args.tune_knn:
+            print("Tuning k for KNN...")
+            k_values = list(range(1, 22, 2)) # Only odd values
+            method_obj = tune_knn(xtrain, ytrain, xtest, ytest, k_values)
+            print("Best k for KNN: ", method_obj.k)
+        else:
+            method_obj = KNN(k=args.K)
     else:
         raise ValueError(f"Unknown method: {args.method}")
 
@@ -122,7 +124,6 @@ def main(args):
     ytest = np.array(ytest, dtype=int)
     preds = np.array(preds, dtype=int)
     plot_confusion_matrix(ytest, preds, classes=classes)
-
 
 if __name__ == "__main__":
     # Definition of the arguments that can be given through the command line (terminal).
@@ -194,6 +195,12 @@ if __name__ == "__main__":
     )
     parser.add_argument(
         "--nn_batch_size", type=int, default=64, help="batch size for NN training"
+    )
+
+    parser.add_argument(
+        "--tune_knn",
+        action="store_true",
+        help="automatically tune k for KNN using validation accuracy"
     )
 
     args = parser.parse_args()
