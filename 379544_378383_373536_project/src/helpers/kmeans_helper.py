@@ -20,11 +20,11 @@ def elbow_plot(X, y, max_k, max_iters):
     plt.grid(True)
     plt.show()
 
-# Tune k by maximizing macro-F1
+# Tune k by maximizing macro‑F1 and plot the tuning curve
 def tune_kmeans(X, y, max_k, max_iters):
     """
     Tune KMeans’ k by maximizing macro‑F1 on a validation split.
-    Tests k=1…max_k and returns the best k and its F1.
+    Tests k=1…max_k, plots F1 vs k, and returns the best k and its F1.
     """
     n = X.shape[0]
     idx = np.arange(n)
@@ -36,12 +36,26 @@ def tune_kmeans(X, y, max_k, max_iters):
 
     best_k = 1
     best_f1 = -1.0
+    f1s = []
+
+    # Evaluate each k
     for k in range(1, max_k + 1):
         km = KMeans(k=k, max_iters=max_iters)
         km.fit(X_tr, y_tr)
         preds = km.predict(X_val)
         f1 = macrof1_fn(preds, y_val)
+        f1s.append(f1)
         if f1 > best_f1:
             best_f1 = f1
             best_k = k
+
+    # Plot the tuning curve
+    plt.figure()
+    plt.plot(range(1, max_k + 1), f1s, marker='o')
+    plt.xlabel("Number of clusters $k$")
+    plt.ylabel("Macro‑F1 score")
+    plt.title("Validation Macro‑F1 vs Number of clusters $k$")
+    plt.grid(True)
+    plt.show()
+
     return best_k, best_f1
