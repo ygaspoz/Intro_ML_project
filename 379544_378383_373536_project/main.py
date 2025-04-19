@@ -186,6 +186,11 @@ if __name__ == "__main__":
         default=10,
         help="number of random initializations for KMeans (default: 10)"
     )
+    parser.add_argument(
+        "--tune_knn",
+        action="store_true",
+        help="automatically tune k for KNN using validation accuracy"
+    )
 
     # MS2 arguments
     parser.add_argument(
@@ -195,12 +200,6 @@ if __name__ == "__main__":
     )
     parser.add_argument(
         "--nn_batch_size", type=int, default=64, help="batch size for NN training"
-    )
-
-    parser.add_argument(
-        "--tune_knn",
-        action="store_true",
-        help="automatically tune k for KNN using validation accuracy"
     )
 
     args = parser.parse_args()
