@@ -149,13 +149,13 @@ if __name__ == "__main__":
     parser.add_argument(
         "--lr",
         type=float,
-        default=1e-5,
+        default=1e-2,
         help="learning rate for methods with learning rate",
     )
     parser.add_argument(
         "--max_iters",
         type=int,
-        default=100,
+        default=700,
         help="max iters for methods which are iterative",
     )
     parser.add_argument(

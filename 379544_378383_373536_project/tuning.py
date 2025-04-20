@@ -1,10 +1,11 @@
 from src.tuning.logistic_regression_tuning import *
 import matplotlib.pyplot as plt
-import numpy as np
+import matplotlib
+matplotlib.use('Agg')
 
-parameter = 'lr'  # Choose between 'max_iters' and 'lr'
+parameter = 'max_iters'  # Choose between 'max_iters' and 'lr'
 
-data = evaluate_hyper_parameter(parameter, 0.0001, 0.1, 0.0001, 800)
+data = evaluate_hyper_parameter(parameter, 100, 5000, 100, 0.00001)
 
 # Extract data for plotting
 x = list(data.keys())
@@ -24,4 +25,4 @@ plt.legend()
 plt.grid(True)
 
 # Show plot
-plt.show()
+plt.savefig('accuracy_plot_0.00001.png')

@@ -24,7 +24,7 @@ class LogisticRegression(object):
     Logistic regression classifier.
     """
 
-    def __init__(self, lr, max_iters=500, verbose=0):
+    def __init__(self, lr=0.01, max_iters=700, verbose=0):
         """
         Initialize the new object (see dummy_methods.py)
         and set its arguments.
