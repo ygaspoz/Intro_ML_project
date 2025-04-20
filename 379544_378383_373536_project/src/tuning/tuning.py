@@ -1,4 +1,4 @@
-from src.tuning.logistic_regression_tuning import *
+from logistic_regression_tuning import *
 import matplotlib.pyplot as plt
 import matplotlib
 matplotlib.use('Agg')

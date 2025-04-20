@@ -72,8 +72,7 @@ def main(args):
     if args.method == "kmeans" and args.tune_kmeans:
         best_k, best_f1 = tune_kmeans(xtrain, ytrain, args.K, args.max_iters)
         print(f"Tuned KMeans: best k = {best_k}, best macro-F1 = {best_f1:.6f}")
-        method_obj = KMeans(k=best_k, max_iters=args.max_iters)
-
+        method_obj = KMeans(k=best_k, max_iters=args.max_iters, n_init=args.n_init)
 
     if args.method == "kmeans" and args.elbow:
         elbow_plot(xtrain, ytrain, args.K, args.max_iters)
