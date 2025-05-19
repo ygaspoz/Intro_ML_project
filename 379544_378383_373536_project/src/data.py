@@ -1,63 +1,29 @@
-import os
 import numpy as np
-import cv2
-import pickle as pkl
-import random
+
+from medmnist import DermaMNIST
 
 
-def _load_images_from_directory(dir, idx):
-    images = []
-    for i in idx:
-        image = np.transpose(cv2.imread(os.path.join(dir, '%05d.png')%i).astype(float), (2,0,1))
-        images.append(image / 255.)
-    return np.array(images)
-
-
-def load_data(directory, skip=1, partition_rate=0.9):
+def load_data(download=True):
     """
-    Return the dataset as numpy arrays.
+    Loads the DermaMNIST dataset and returns images and labels as NumPy arrays. 
+    If download is True, the dataset will be downloaded if it does not already exist 
+    and stored in the location where the medmnist package is installed.
     
     Arguments:
-        directory (str): path to the dataset directory
+        download (boolean): If True, downloads the dataset if not already available.
     Returns:
-        train_images (array): images of the train set, of shape (N,H,W)
-        test_images (array): images of the test set, of shape (N',H,W)
-        train_labels (array): labels of the train set, of shape (N,)
-        test_labels (array): labels of the test set, of shape (N',)
-        train_centers (array): centers of the dog of the train set, of shape (N,2)
-        test_centers (array): centers of the dog of the test set, of shape (N',2)
+        train_images (np.ndarray): Training set images, shape (N, H, W, C).
+        test_images (np.ndarray): Test set images, shape (N', H, W, C).
+        train_labels (np.ndarray): Training set labels, shape (N,).
+        test_labels (np.ndarray): Test set labels, shape (N',).
     """
+    train_dataset = DermaMNIST(split="train", download=download, size=28)
+    test_dataset = DermaMNIST(split="test", download=download, size=28)
 
-    with open(os.path.join(directory,'annotation.pkl'), 'rb') as f:
-        annos = pkl.load(f)
-    labels = annos['labels']
-    centers = annos['centers'].astype(float)
+    train_images = np.stack([np.array(image) for image, _ in train_dataset])
+    test_images = np.stack([np.array(image) for image, _ in test_dataset])
 
-    # shuffled idx
-    idx = annos['idx'][::skip]
+    train_labels = np.array([label for _, label in train_dataset]).reshape(-1)
+    test_labels = np.array([label for _, label in test_dataset]).reshape(-1)
     
-    labels = labels[idx]
-    centers = centers[idx]
-    images = _load_images_from_directory(os.path.join(directory, 'images'), idx)
-
-    partition = int(len(idx)*partition_rate)
-    train_images = images[:partition]
-    test_images = images[partition:]
-    train_labels = labels[:partition]
-    test_labels = labels[partition:]
-    train_centers = centers[:partition]
-    test_centers = centers[partition:]
-
-    return train_images, test_images, train_labels, test_labels, train_centers, test_centers
-
-
-if __name__ == "__main__":
-    print('Testing data loading...')
-
-    # change skip to downsample the dataset
-    xtrain, xtest, ytrain, ytest = load_data('../../../data', skip=1)
-
-    print(xtrain.shape, xtest.shape)
-    print(ytrain.shape, ytest.shape)
-
-    print('Done!')
+    return train_images, test_images, train_labels, test_labels
