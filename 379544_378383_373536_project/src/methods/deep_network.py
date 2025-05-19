@@ -56,7 +56,7 @@ class CNN(nn.Module):
     It should use at least one convolutional layer.
     """
 
-    def __init__(self, input_channels, n_classes):
+    def __init__(self, input_channels, n_classes, dim_x = 28, dim_y = 28, filters = (16, 32, 64), kernel_size = 3, feature = 128):
         """
         Initialize the network.
 
@@ -67,12 +67,35 @@ class CNN(nn.Module):
             input_channels (int): number of channels in the input
             n_classes (int): number of classes to predict
         """
-        super().__init__()
-        ##
-        ###
-        #### WRITE YOUR CODE HERE!
-        ###
-        ##
+        super(CNN, self).__init__()
+
+        self.filters = filters
+        self.kernel_size = kernel_size
+        self.padding = (self.kernel_size-1)//2
+        self.input_channels = input_channels
+        self.dim_x = dim_x
+        self.dim_y = dim_y
+        self.n_classes = n_classes
+        self.feature = feature
+
+        self.conv2d1 = nn.Conv2d(in_channels=self.input_channels,
+                                 out_channels=self.filters[0],
+                                 kernel_size=self.kernel_size,
+                                 padding=self.padding)
+        self.conv2d2 = nn.Conv2d(in_channels=self.filters[0],
+                                 out_channels=self.filters[1],
+                                 kernel_size=self.kernel_size,
+                                 padding=self.padding)
+        self.conv2d3 = nn.Conv2d(in_channels=self.filters[1],
+                                 out_channels=self.filters[2],
+                                 kernel_size=self.kernel_size,
+                                 padding=self.padding)
+
+        self.dim = self.dim_x // ((self.kernel_size - 1) ** 3)
+        self.in_features = self.dim * self.dim * self.filters[2]
+
+        self.fc1 = nn.Linear(in_features=self.in_features, out_features=self.feature)
+        self.fc2 = nn.Linear(in_features=self.feature, out_features=self.n_classes)
 
     def forward(self, x):
         """
@@ -84,12 +107,23 @@ class CNN(nn.Module):
             preds (tensor): logits of predictions of shape (N, C)
                 Reminder: logits are value pre-softmax.
         """
-        ##
-        ###
-        #### WRITE YOUR CODE HERE!
-        ###
-        ##
-        return preds
+        x = self.conv2d1(x)
+        x = F.relu(x)
+        x = F.max_pool2d(x, kernel_size=self.kernel_size - 1)
+
+        x = self.conv2d2(x)
+        x = F.relu(x)
+        x = F.max_pool2d(x, kernel_size=self.kernel_size - 1)
+
+        x = self.conv2d3(x)
+        x = F.relu(x)
+        x = F.max_pool2d(x, kernel_size=self.kernel_size - 1)
+
+        x = torch.flatten(x, 1)
+        x = self.fc1(x)
+        x = F.relu(x)
+        x = self.fc2(x)
+        return x
 
 
 class Trainer(object):
