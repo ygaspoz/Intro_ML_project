@@ -5,7 +5,7 @@ from torchinfo import summary
 
 from src.data import load_data
 from src.methods.deep_network import MLP, CNN, Trainer
-from src.utils import normalize_fn, append_bias_term, accuracy_fn, macrof1_fn, get_n_classes
+from src.utils import normalize_fn, append_bias_term, accuracy_fn, macrof1_fn, get_n_classes, train_test_split
 
 
 def main(args):
@@ -27,11 +27,15 @@ def main(args):
 
     # Make a validation set
     if not args.test:
-    ### WRITE YOUR CODE HERE
+        xtrain, xtest, ytrain, ytest = train_test_split(xtrain, ytrain, test_size=0.2, random_state=42)
 
+    means = np.mean(xtrain, axis=0, keepdims=True)
+    stds = np.std(xtrain, axis=0, keepdims=True)
+    xtrain = normalize_fn(xtrain, means, stds)
+    xtest = normalize_fn(xtest, means, stds)
 
-    ### WRITE YOUR CODE HERE to do any other data processing
-
+    xtrain = append_bias_term(xtrain)
+    xtest = append_bias_term(xtest)
 
     ## 3. Initialize the method you want to use.
 
@@ -42,6 +46,8 @@ def main(args):
     n_classes = get_n_classes(ytrain)
     if args.nn_type == "mlp":
         model = ... ### WRITE YOUR CODE HERE
+    elif args.nn_type == "cnn":
+        model = CNN(n_classes=n_classes, input_channels=3)
 
     summary(model)
 

@@ -3,6 +3,24 @@ import numpy as np
 
 # Generaly utilies
 ##################
+def train_test_split(X, y, test_size=0.2, random_state=None):
+    if random_state is not None:
+        np.random.seed(random_state)
+
+    # Shuffle the data
+    indices = np.arange(X.shape[0])
+    np.random.shuffle(indices)
+
+    X = X[indices]
+    y = y[indices]
+
+    # Split the data
+    split_idx = int(X.shape[0] * (1 - test_size))
+    X_train, X_test = X[:split_idx], X[split_idx:]
+    y_train, y_test = y[:split_idx], y[split_idx:]
+
+    return X_train, X_test, y_train, y_test
+
 
 def label_to_onehot(labels, C=None):
     """
@@ -100,15 +118,14 @@ def macrof1_fn(pred_labels, gt_labels):
     return macrof1/len(class_ids)
 
 def mse_fn(pred,gt):
-    '''
+    """
         Mean Squared Error
         Arguments:
             pred: NxD prediction matrix
             gt: NxD groundtruth values for each predictions
         Returns:
             returns the computed loss
-
-    '''
+    """
     loss = (pred-gt)**2
     loss = np.mean(loss)
     return loss
