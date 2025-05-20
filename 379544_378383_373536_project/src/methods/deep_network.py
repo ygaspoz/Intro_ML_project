@@ -13,24 +13,47 @@ class MLP(nn.Module):
     It should not use any convolutional layers.
     """
 
-    def __init__(self, input_size, n_classes):
+    def __init__(self, input_size, n_classes, dimensions, 
+             activations=None, 
+             loss=None, 
+             learning_rate=1e-4):
         """
         Initialize the network.
-
-        You can add arguments if you want, but WITH a default value, e.g.:
-            __init__(self, input_size, n_classes, my_arg=32)
 
         Arguments:
             input_size (int): size of the input
             n_classes (int): number of classes to predict
+            dimensions (list of int): hidden layer sizes
+            activations (list of callables): activation functions for each hidden layer
+            loss: loss function (default: CrossEntropyLoss)
+            learning_rate: optimizer learning rate
         """
         super().__init__()
-        ##
-        ###
-        #### WRITE YOUR CODE HERE!
-        ###
-        ##
+        self.input_size = input_size
+        self.n_classes = n_classes
+        self.loss = loss if loss is not None else nn.CrossEntropyLoss()
+        self.lr = learning_rate
 
+        dims = [input_size] + dimensions + [n_classes]
+        self.n_layers = len(dims) - 1
+
+        # Weights and bias
+        self.w = {}
+        self.b = {}
+
+        # Use default activations
+        if activations is None:
+            activations = [F.relu] * len(dimensions)
+
+        # Build layers
+        layer_sizes = [input_size] + dimensions + [n_classes]
+        self.layers = nn.ModuleList() # List of nn.Linear, Conv2d. etc...
+        self.activations = activations
+
+        for i in range(len(layer_sizes) - 1):
+            self.layers.append(nn.Linear(layer_sizes[i], layer_sizes[i+1]))
+
+        
     def forward(self, x):
         """
         Predict the class of a batch of samples with the model.
@@ -41,11 +64,11 @@ class MLP(nn.Module):
             preds (tensor): logits of predictions of shape (N, C)
                 Reminder: logits are value pre-softmax.
         """
-        ##
-        ###
-        #### WRITE YOUR CODE HERE!
-        ###
-        ##
+        # Compute everything but the last 
+        for layer in self.layers[:-1]: 
+            x = torch.relu(layer(x))
+       
+        preds = self.layers[-1](x)
         return preds
 
 

@@ -45,7 +45,7 @@ def main(args):
     # Note: you might need to reshape the data depending on the network you use!
     n_classes = get_n_classes(ytrain)
     if args.nn_type == "mlp":
-        model = ... ### WRITE YOUR CODE HERE
+        model = MLP(input_size=3, n_classes=n_classes,dimensions=[128,64])
     elif args.nn_type == "cnn":
         model = CNN(n_classes=n_classes, input_channels=3)
 
