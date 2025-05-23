@@ -172,7 +172,7 @@ class Trainer(object):
         self.batch_size = batch_size
 
         self.criterion = nn.CrossEntropyLoss()
-        self.optimizer = ...  ### WRITE YOUR CODE HERE
+        self.optimizer = torch.optim.SGD(self.model.parameters(), lr=self.lr)
 
     def train_all(self, dataloader):
         """
@@ -185,9 +185,7 @@ class Trainer(object):
             dataloader (DataLoader): dataloader for training data
         """
         for ep in range(self.epochs):
-            self.train_one_epoch(dataloader)
-
-            ### WRITE YOUR CODE HERE if you want to do add something else at each epoch
+            self.train_one_epoch(dataloader, ep)
 
     def train_one_epoch(self, dataloader, ep):
         """
@@ -199,11 +197,21 @@ class Trainer(object):
         Arguments:
             dataloader (DataLoader): dataloader for training data
         """
-        ##
-        ###
-        #### WRITE YOUR CODE HERE!
-        ###
-        ##
+        self.model.train()
+
+        for x, y in dataloader:
+            # Reset the gradients
+            self.optimizer.zero_grad()
+            # Forward pass
+            y_pred = self.model(x)
+            # Compute the loss
+            loss = self.criterion(y_pred, y)
+            # Compute gradients (backpropagation)
+            loss.backward()
+            # Update the parameters
+            self.optimizer.step()
+            if ep % 10 == 0:
+                print(f"Epoch {ep}: loss = {loss.item():.4f}")
 
     def predict_torch(self, dataloader):
         """
@@ -222,11 +230,18 @@ class Trainer(object):
             pred_labels (torch.tensor): predicted labels of shape (N,),
                 with N the number of data points in the validation/test data.
         """
-        ##
-        ###
-        #### WRITE YOUR CODE HERE!
-        ###
-        ##
+        self.model.eval()
+
+        pred_labels = []
+        with torch.no_grad():
+            for x, _ in dataloader:
+                y_pred = self.model(x)
+                predictions = torch.argmax(y_pred, dim=1)
+                pred_labels.append(predictions)
+
+        # Concatenate all predictions
+        pred_labels = torch.cat(pred_labels, dim=0)
+
         return pred_labels
 
     def fit(self, training_data, training_labels):
