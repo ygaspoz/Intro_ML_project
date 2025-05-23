@@ -13,10 +13,7 @@ class MLP(nn.Module):
     It should not use any convolutional layers.
     """
 
-    def __init__(self, input_size, n_classes, dimensions, 
-             activations=None, 
-             loss=None, 
-             learning_rate=1e-4):
+    def __init__(self, input_size, n_classes, dimensions, activations=None):
         """
         Initialize the network.
 
@@ -25,32 +22,22 @@ class MLP(nn.Module):
             n_classes (int): number of classes to predict
             dimensions (list of int): hidden layer sizes
             activations (list of callables): activation functions for each hidden layer
-            loss: loss function (default: CrossEntropyLoss)
-            learning_rate: optimizer learning rate
         """
         super().__init__()
         self.input_size = input_size
         self.n_classes = n_classes
-        self.loss = loss if loss is not None else nn.CrossEntropyLoss()
-        self.lr = learning_rate
-
-        dims = [input_size] + dimensions + [n_classes]
-        self.n_layers = len(dims) - 1
-
-        # Weights and bias
-        self.w = {}
-        self.b = {}
-
-        # Use default activations
-        if activations is None:
-            activations = [F.relu] * len(dimensions)
 
         # Build layers
         layer_sizes = [input_size] + dimensions + [n_classes]
+        self.n_layers = len(layer_sizes) - 1
         self.layers = nn.ModuleList() # List of nn.Linear, Conv2d. etc...
+
+         # Use default activations
+        if activations is None:
+            activations = [torch.relu] * self.n_layers
         self.activations = activations
 
-        for i in range(len(layer_sizes) - 1):
+        for i in range(self.n_layers):
             self.layers.append(nn.Linear(layer_sizes[i], layer_sizes[i+1]))
 
         
@@ -65,8 +52,8 @@ class MLP(nn.Module):
                 Reminder: logits are value pre-softmax.
         """
         # Compute everything but the last 
-        for layer in self.layers[:-1]: 
-            x = torch.relu(layer(x))
+        for i in range(self.n_layers - 1):
+            x = self.activations[i](self.layers[i](x))
        
         preds = self.layers[-1](x)
         return preds
@@ -234,7 +221,7 @@ class Trainer(object):
 
         pred_labels = []
         with torch.no_grad():
-            for x, _ in dataloader:
+            for x, in dataloader:
                 y_pred = self.model(x)
                 predictions = torch.argmax(y_pred, dim=1)
                 pred_labels.append(predictions)

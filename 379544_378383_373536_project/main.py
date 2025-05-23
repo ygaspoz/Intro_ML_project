@@ -45,7 +45,7 @@ def main(args):
     # Note: you might need to reshape the data depending on the network you use!
     n_classes = get_n_classes(ytrain)
     if args.nn_type == "mlp":
-        model = MLP(input_size=3, n_classes=n_classes,dimensions=[128,64])
+        model = MLP(input_size=xtrain.shape[1], n_classes=n_classes,dimensions=[xtrain.shape[1]//2, xtrain.shape[1]//4, 128])
     elif args.nn_type == "cnn":
         model = CNN(n_classes=n_classes, input_channels=3)
 
@@ -71,8 +71,13 @@ def main(args):
 
     ## As there are no test dataset labels, check your model accuracy on validation dataset.
     # You can check your model performance on test set by submitting your test set predictions on the AIcrowd competition.
-    acc = accuracy_fn(preds, xtest)
-    macrof1 = macrof1_fn(preds, xtest)
+    if args.test:
+        true_labels = y_test     # from your load_data() unpacking
+    else:
+        true_labels = ytest      # from your train_test_split()
+
+    acc = accuracy_fn(preds, true_labels)
+    macrof1 = macrof1_fn(preds, true_labels)
     print(f"Validation set:  accuracy = {acc:.3f}% - F1-score = {macrof1:.6f}")
 
 
