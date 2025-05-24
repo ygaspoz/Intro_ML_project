@@ -37,15 +37,15 @@ class NoHidePrints:
     def __exit__(self, exc_type, exc_val, exc_tb):
         pass
 
-
+no_print = HidePrints
 class TestProject(unittest.TestCase):
 
     @staticmethod
     def title(msg):
         print(f"\n==============\n> {msg} ...")
 
-
     def test_1_folder_structure(self):
+        project_path = Path(".")
         """Test the framework structure (folder and files)."""
         self.title("Testing folder structure")
         self.assertTrue(project_path.exists(), f"No folder found at {project_path}")

@@ -71,7 +71,7 @@ def main(args):
     # Note: you might need to reshape the data depending on the network you use!
     n_classes = get_n_classes(ytrain)
     if args.nn_type == "mlp":
-        model = MLP(input_size=xtrain.shape[1], n_classes=n_classes,dimensions=[xtrain.shape[1]//2, xtrain.shape[1]//4, 128])
+        model = MLP(input_size=xtrain.shape[1], n_classes=n_classes)
     elif args.nn_type == "cnn":
         model = CNN(n_classes=n_classes, input_channels=3)
 
