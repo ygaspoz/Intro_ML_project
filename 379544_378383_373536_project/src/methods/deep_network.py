@@ -142,7 +142,7 @@ class Trainer(object):
     It will also serve as an interface between numpy and pytorch.
     """
 
-    def __init__(self, model, lr, epochs, batch_size, device=torch.device("cpu")):
+    def __init__(self, model, lr, epochs, batch_size, device=torch.device("cpu"), verbose=False):
         """
         Initialize the trainer object for a given model.
 
@@ -157,6 +157,7 @@ class Trainer(object):
         self.epochs = epochs
         self.model = model
         self.batch_size = batch_size
+        self.verbose = verbose
 
         self.model = self.model.to(self.device)
 
@@ -188,6 +189,8 @@ class Trainer(object):
             dataloader (DataLoader): dataloader for training data
         """
         self.model.train()
+        total_loss = 0.0
+        n_batches = 0
 
         for x, y in dataloader:
             x, y = x.to(self.device), y.to(self.device)
@@ -201,8 +204,13 @@ class Trainer(object):
             loss.backward()
             # Update the parameters
             self.optimizer.step()
-            if ep % 10 == 0:
-                print(f"Epoch {ep}: loss = {loss.item():.4f}")
+            total_loss += loss.item()
+            n_batches += 1
+
+        avg_loss = total_loss / n_batches
+
+        if self.verbose and (ep % 10 == 0 or ep == self.epochs - 1):
+            print(f"Epoch {ep}: average loss = {avg_loss:.4f}")
 
     def predict_torch(self, dataloader):
         """

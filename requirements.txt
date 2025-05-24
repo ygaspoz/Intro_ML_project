@@ -1,5 +1,6 @@
 numpy
 matplotlib
+seaborn
 opencv-python
 torch
 torchinfo

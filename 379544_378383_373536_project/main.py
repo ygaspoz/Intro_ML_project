@@ -3,6 +3,7 @@ import argparse
 import numpy as np
 from torchinfo import summary
 import torch
+import matplotlib.pyplot as plt
 
 from src.data import load_data
 from src.methods.deep_network import MLP, CNN, Trainer
@@ -79,7 +80,8 @@ def main(args):
     summary(model)
 
     # Trainer object
-    method_obj = Trainer(model, lr=args.lr, epochs=args.max_iters, batch_size=args.nn_batch_size, device=args.device)
+    method_obj = Trainer(model, lr=args.lr,epochs=args.max_iters, batch_size=args.nn_batch_size,
+                         device=args.device, verbose=args.verbose)
 
 
     ## 4. Train and evaluate the method
@@ -109,6 +111,50 @@ def main(args):
 
 
     ### WRITE YOUR CODE HERE if you want to add other outputs, visualization, etc.
+    if args.grid_search_lr_batch:
+        import seaborn as sns
+        import matplotlib.pyplot as plt
+
+        learning_rates = [1e-4, 1e-3, 1e-2, 1e-1]
+        batch_sizes = [16, 32, 64, 128]
+        results = np.zeros((len(batch_sizes), len(learning_rates)))  # Rows = batch size, Cols = learning rate
+
+        for i, bs in enumerate(batch_sizes):
+            for j, lr in enumerate(learning_rates):
+                print(f"\n Training with batch size = {bs}, learning rate = {lr}")
+
+                if args.nn_type == "mlp":
+                    model = MLP(input_size=xtrain.shape[1], n_classes=n_classes)
+                else:
+                    model = CNN(n_classes=n_classes, input_channels=3)
+
+                model.to(args.device)
+                trainer = Trainer(model, lr=lr, epochs=args.max_iters, batch_size=bs,
+                                  device=args.device, verbose=False)
+
+                trainer.fit(xtrain, ytrain)
+                preds_val = trainer.predict(xtest)
+                acc_val = accuracy_fn(preds_val, y_test)
+
+                results[i, j] = acc_val
+                print(f"Validation Accuracy = {acc_val:.2f}%")
+
+        # Plot heatmap
+        plt.figure(figsize=(8, 6))
+        sns.heatmap(results, annot=True, fmt=".1f", cmap="viridis",
+                    xticklabels=learning_rates, yticklabels=batch_sizes)
+        plt.xlabel("Learning Rate")
+        plt.ylabel("Batch Size")
+        plt.title("Validation Accuracy (%) — Grid Search")
+        plt.tight_layout()
+        plt.show()
+
+        # Print best combo
+        best_idx = np.unravel_index(np.argmax(results), results.shape)
+        best_bs = batch_sizes[best_idx[0]]
+        best_lr = learning_rates[best_idx[1]]
+        best_acc = results[best_idx]
+        print(f"\n Best combination: Batch Size = {best_bs}, Learning Rate = {best_lr} → Accuracy = {best_acc:.2f}%")
 
 
 if __name__ == '__main__':
@@ -131,7 +177,8 @@ if __name__ == '__main__':
     parser.add_argument('--max_iters', type=int, default=100, help="max iters for methods which are iterative")
     parser.add_argument('--test', action="store_true",
                         help="train on whole training data and evaluate on the test data, otherwise use a validation set")
-
+    parser.add_argument('--verbose', action="store_true", help="print training progress per epoch")
+    parser.add_argument('--grid_search_lr_batch', action="store_true", help="Grid search over learning rate and batch size")
 
     # "args" will keep in memory the arguments and their values,
     # which can be accessed as "args.data", for example.
