@@ -66,7 +66,7 @@ class CNN(nn.Module):
     It should use at least one convolutional layer.
     """
 
-    def __init__(self, input_channels, n_classes, dim_x = 28, dim_y = 28, filters = (16, 32, 64), kernel_size = 3, feature = 128):
+    def __init__(self, input_channels, n_classes, dim_x = 28, dim_y = 28, filters = (64, 128, 256), kernel_size = 3, feature = 128):
         """
         Initialize the network.
 
@@ -87,7 +87,6 @@ class CNN(nn.Module):
         self.dim_y = dim_y
         self.n_classes = n_classes
         self.feature = feature
-
         self.conv2d1 = nn.Conv2d(in_channels=self.input_channels,
                                  out_channels=self.filters[0],
                                  kernel_size=self.kernel_size,
@@ -143,7 +142,7 @@ class Trainer(object):
     It will also serve as an interface between numpy and pytorch.
     """
 
-    def __init__(self, model, lr, epochs, batch_size):
+    def __init__(self, model, lr, epochs, batch_size, device):
         """
         Initialize the trainer object for a given model.
 
@@ -153,13 +152,17 @@ class Trainer(object):
             epochs (int): number of epochs of training
             batch_size (int): number of data points in each batch
         """
+        self.device = device
         self.lr = lr
         self.epochs = epochs
         self.model = model
         self.batch_size = batch_size
 
+        self.model = self.model.to(self.device)
+
         self.criterion = nn.CrossEntropyLoss()
-        self.optimizer = torch.optim.SGD(self.model.parameters(), lr=self.lr)
+        #self.optimizer = torch.optim.SGD(self.model.parameters(), lr=self.lr)
+        self.optimizer = torch.optim.Adam(self.model.parameters(), lr=self.lr)
 
     def train_all(self, dataloader):
         """
@@ -187,6 +190,7 @@ class Trainer(object):
         self.model.train()
 
         for x, y in dataloader:
+            x, y = x.to(self.device), y.to(self.device)
             # Reset the gradients
             self.optimizer.zero_grad()
             # Forward pass
@@ -222,6 +226,7 @@ class Trainer(object):
         pred_labels = []
         with torch.no_grad():
             for x, in dataloader:
+                x = x.to(self.device)
                 y_pred = self.model(x)
                 predictions = torch.argmax(y_pred, dim=1)
                 pred_labels.append(predictions)

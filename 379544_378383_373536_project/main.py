@@ -2,6 +2,7 @@ import argparse
 
 import numpy as np
 from torchinfo import summary
+import torch
 
 from src.data import load_data
 from src.methods.deep_network import MLP, CNN, Trainer
@@ -17,29 +18,54 @@ def main(args):
         args (Namespace): arguments that were parsed from the command line (see at the end
                           of this file). Their value can be accessed as "args.argument".
     """
-    ## 1. First, we load our data and flatten the images into vectors
+
+    if args.check_gpu:
+        if torch.cuda.is_available():
+            print("CUDA is available! Running on GPU ...")
+        else:
+            print("CUDA is not available! Running on CPU ...")
+
+
+    ## 1. First, we load our data
     xtrain, xtest, ytrain, y_test = load_data()
-    xtrain = xtrain.reshape(xtrain.shape[0], -1)
-    xtest = xtest.reshape(xtest.shape[0], -1)
 
-    ## 2. Then we must prepare it. This is were you can create a validation set,
-    #  normalize, add bias, etc.
+    ## 2. Prepare data based on model type
+    if args.nn_type == "mlp":
+        # Flatten images for MLP
+        xtrain = xtrain.reshape(xtrain.shape[0], -1)
+        xtest = xtest.reshape(xtest.shape[0], -1)
+    elif args.nn_type == "cnn":
+        if len(xtrain.shape) == 3:  # If shape is (N, H, W)
+            xtrain = xtrain[:, np.newaxis, :, :]  # Add channel dimension
+            xtest = xtest[:, np.newaxis, :, :]
+        # With:
+        if len(xtrain.shape) == 3:  # If shape is (N, H, W)
+            xtrain = xtrain[:, np.newaxis, :, :]
+            xtest = xtest[:, np.newaxis, :, :]
+        elif len(xtrain.shape) == 4:  # If shape is (N, H, W, C)
+            # Transpose from (N, H, W, C) to (N, C, H, W)
+            xtrain = np.transpose(xtrain, (0, 3, 1, 2))
+            xtest = np.transpose(xtest, (0, 3, 1, 2))
 
-    # Make a validation set
-    if not args.test:
-        xtrain, xtest, ytrain, ytest = train_test_split(xtrain, ytrain, test_size=0.2, random_state=42)
+    # Continue with data preparation...
+    means = np.mean(xtrain.reshape(xtrain.shape[0], -1), axis=0, keepdims=True)
+    stds = np.std(xtrain.reshape(xtrain.shape[0], -1), axis=0, keepdims=True)
 
-    means = np.mean(xtrain, axis=0, keepdims=True)
-    stds = np.std(xtrain, axis=0, keepdims=True)
-    xtrain = normalize_fn(xtrain, means, stds)
-    xtest = normalize_fn(xtest, means, stds)
+    # Normalize differently based on model type
+    if args.nn_type == "mlp":
+        xtrain = normalize_fn(xtrain, means, stds)
+        xtest = normalize_fn(xtest, means, stds)
+        xtrain = append_bias_term(xtrain)
+        xtest = append_bias_term(xtest)
+    else:
+        # For CNN, reshape means/stds and normalize while preserving dimensions
+        flat_xtrain = xtrain.reshape(xtrain.shape[0], -1)
+        flat_xtrain = normalize_fn(flat_xtrain, means, stds)
+        xtrain = flat_xtrain.reshape(xtrain.shape)
 
-    xtrain = append_bias_term(xtrain)
-    xtest = append_bias_term(xtest)
-
-    ## 3. Initialize the method you want to use.
-
-    # Neural Networks (MS2)
+        flat_xtest = xtest.reshape(xtest.shape[0], -1)
+        flat_xtest = normalize_fn(flat_xtest, means, stds)
+        xtest = flat_xtest.reshape(xtest.shape)
 
     # Prepare the model (and data) for Pytorch
     # Note: you might need to reshape the data depending on the network you use!
@@ -49,10 +75,11 @@ def main(args):
     elif args.nn_type == "cnn":
         model = CNN(n_classes=n_classes, input_channels=3)
 
+    model.to(args.device)
     summary(model)
 
     # Trainer object
-    method_obj = Trainer(model, lr=args.lr, epochs=args.max_iters, batch_size=args.nn_batch_size)
+    method_obj = Trainer(model, lr=args.lr, epochs=args.max_iters, batch_size=args.nn_batch_size, device=args.device)
 
 
     ## 4. Train and evaluate the method
@@ -74,7 +101,7 @@ def main(args):
     if args.test:
         true_labels = y_test     # from your load_data() unpacking
     else:
-        true_labels = ytest      # from your train_test_split()
+        true_labels = y_test      # from your train_test_split()
 
     acc = accuracy_fn(preds, true_labels)
     macrof1 = macrof1_fn(preds, true_labels)
@@ -95,8 +122,9 @@ if __name__ == '__main__':
     parser.add_argument('--nn_type', default="mlp",
                         help="which network architecture to use, it can be 'mlp' | 'transformer' | 'cnn'")
     parser.add_argument('--nn_batch_size', type=int, default=64, help="batch size for NN training")
+    parser.add_argument('--check_gpu', action="store_true", default=False, help="whether to check the GPU")
     parser.add_argument('--device', type=str, default="cpu",
-                        help="Device to use for the training, it can be 'cpu' | 'cuda' | 'mps'")
+                        help="Device to use for the training, it can be 'cpu' | 'cuda' | 'mps', with multiple GPUs, add :NUM")
 
 
     parser.add_argument('--lr', type=float, default=1e-5, help="learning rate for methods with learning rate")

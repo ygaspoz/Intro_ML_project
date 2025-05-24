@@ -2,4 +2,5 @@ numpy
 matplotlib
 opencv-python
 torch
+torchinfo
 medmnist
