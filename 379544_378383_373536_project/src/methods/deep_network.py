@@ -142,7 +142,7 @@ class Trainer(object):
     It will also serve as an interface between numpy and pytorch.
     """
 
-    def __init__(self, model, lr, epochs, batch_size, device):
+    def __init__(self, model, lr, epochs, batch_size, device=torch.device("cpu")):
         """
         Initialize the trainer object for a given model.
 
@@ -196,7 +196,7 @@ class Trainer(object):
             # Forward pass
             y_pred = self.model(x)
             # Compute the loss
-            loss = self.criterion(y_pred, y)
+            loss = self.criterion(y_pred, y.long())
             # Compute gradients (backpropagation)
             loss.backward()
             # Update the parameters
