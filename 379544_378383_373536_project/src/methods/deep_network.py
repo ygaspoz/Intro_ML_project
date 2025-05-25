@@ -1,10 +1,9 @@
 import torch
 import torch.nn as nn
 import torch.nn.functional as F
-from torch.utils.data import TensorDataset, DataLoader
+from torch.utils.data import TensorDataset, DataLoader, Dataset
 
 ## MS2
-
 
 class MLP(nn.Module):
     """
@@ -66,7 +65,7 @@ class CNN(nn.Module):
     It should use at least one convolutional layer.
     """
 
-    def __init__(self, input_channels, n_classes, dim_x = 28, dim_y = 28, filters = (64, 128, 256), kernel_size = 3, feature = 128):
+    def __init__(self, input_channels, n_classes, dim_x = 28, dim_y = 28, filters = (128, 1024, 2048), kernel_size = 3, features = (128, 64)):
         """
         Initialize the network.
 
@@ -86,25 +85,36 @@ class CNN(nn.Module):
         self.dim_x = dim_x
         self.dim_y = dim_y
         self.n_classes = n_classes
-        self.feature = feature
+        self.features = features
         self.conv2d1 = nn.Conv2d(in_channels=self.input_channels,
                                  out_channels=self.filters[0],
                                  kernel_size=self.kernel_size,
                                  padding=self.padding)
+        self.bn1 = nn.BatchNorm2d(self.filters[0])
         self.conv2d2 = nn.Conv2d(in_channels=self.filters[0],
                                  out_channels=self.filters[1],
                                  kernel_size=self.kernel_size,
                                  padding=self.padding)
+        self.bn2 = nn.BatchNorm2d(self.filters[1])
         self.conv2d3 = nn.Conv2d(in_channels=self.filters[1],
                                  out_channels=self.filters[2],
                                  kernel_size=self.kernel_size,
                                  padding=self.padding)
+        self.bn3 = nn.BatchNorm2d(self.filters[2])
+
 
         self.dim = self.dim_x // ((self.kernel_size - 1) ** 3)
         self.in_features = self.dim * self.dim * self.filters[2]
 
-        self.fc1 = nn.Linear(in_features=self.in_features, out_features=self.feature)
-        self.fc2 = nn.Linear(in_features=self.feature, out_features=self.n_classes)
+        self.fc1 = nn.Linear(in_features=self.in_features, out_features=self.features[0])
+        self.bn_fc1 = nn.BatchNorm1d(self.features[0])
+        self.do1 = nn.Dropout(p=0.7)
+        """
+        self.fc2 = nn.Linear(in_features=self.features[0], out_features=self.features[1])
+        self.bn_fc2 = nn.BatchNorm1d(self.features[1])
+        self.do2 = nn.Dropout(p=0.5)
+        """
+        self.fc3 = nn.Linear(in_features=self.features[0], out_features=self.n_classes)
 
     def forward(self, x):
         """
@@ -117,21 +127,35 @@ class CNN(nn.Module):
                 Reminder: logits are value pre-softmax.
         """
         x = self.conv2d1(x)
+        x = self.bn1(x)
         x = F.relu(x)
         x = F.max_pool2d(x, kernel_size=self.kernel_size - 1)
 
         x = self.conv2d2(x)
+        x = self.bn2(x)
         x = F.relu(x)
         x = F.max_pool2d(x, kernel_size=self.kernel_size - 1)
 
         x = self.conv2d3(x)
+        x = self.bn3(x)
         x = F.relu(x)
         x = F.max_pool2d(x, kernel_size=self.kernel_size - 1)
 
         x = torch.flatten(x, 1)
+
         x = self.fc1(x)
+        x = self.bn_fc1(x)
         x = F.relu(x)
+        x = self.do1(x)
+
+        """
         x = self.fc2(x)
+        x = self.bn_fc2(x)
+        x = F.relu(x)
+        x = self.do2(x)
+        """
+
+        x = self.fc3(x)
         return x
 
 
@@ -142,7 +166,7 @@ class Trainer(object):
     It will also serve as an interface between numpy and pytorch.
     """
 
-    def __init__(self, model, lr, epochs, batch_size, device=torch.device("cpu"), verbose=False):
+    def __init__(self, model, lr, epochs, batch_size, device=torch.device("cpu"), verbose=False, workers=0):
         """
         Initialize the trainer object for a given model.
 
@@ -152,18 +176,24 @@ class Trainer(object):
             epochs (int): number of epochs of training
             batch_size (int): number of data points in each batch
         """
-        self.device = device
         self.lr = lr
         self.epochs = epochs
         self.model = model
         self.batch_size = batch_size
         self.verbose = verbose
 
-        self.model = self.model.to(self.device)
-
         self.criterion = nn.CrossEntropyLoss()
         #self.optimizer = torch.optim.SGD(self.model.parameters(), lr=self.lr)
-        self.optimizer = torch.optim.Adam(self.model.parameters(), lr=self.lr)
+        #self.optimizer = torch.optim.Adam(self.model.parameters(), lr=self.lr)
+        self.optimizer = torch.optim.AdamW(self.model.parameters(), lr=self.lr, weight_decay=1e-5)
+
+        # Optimizations for faster training
+        self.device = device
+        self.workers = workers
+        if self.device != torch.device("cpu"):
+            self.pin_memory = True
+        self.model = self.model.to(self.device)
+
 
     def train_all(self, dataloader):
         """
@@ -260,7 +290,7 @@ class Trainer(object):
         # First, prepare data for pytorch
         train_dataset = TensorDataset(torch.from_numpy(training_data).float(),
                                       torch.from_numpy(training_labels))
-        train_dataloader = DataLoader(train_dataset, batch_size=self.batch_size, shuffle=True)
+        train_dataloader = DataLoader(train_dataset, batch_size=self.batch_size, shuffle=True, pin_memory=self.pin_memory, num_workers=self.workers)
 
         self.train_all(train_dataloader)
 

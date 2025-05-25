@@ -4,10 +4,12 @@ import numpy as np
 from torchinfo import summary
 import torch
 import matplotlib.pyplot as plt
-
+from src.helpers.training_summary import *
+import time
 from src.data import load_data
 from src.methods.deep_network import MLP, CNN, Trainer
 from src.utils import normalize_fn, append_bias_term, accuracy_fn, macrof1_fn, get_n_classes, train_test_split
+import os
 
 
 def main(args):
@@ -20,12 +22,23 @@ def main(args):
                           of this file). Their value can be accessed as "args.argument".
     """
 
-    if args.check_gpu:
+    if args.check_optimisation:
+        print("Checking for GPU optimisation...")
         if torch.cuda.is_available():
-            print("CUDA is available! Running on GPU ...")
+            print("CUDA is available!")
+            num_gpus = torch.cuda.device_count()
+            for gpu in range(num_gpus):
+                name = torch.cuda.get_device_name(gpu)
+                print(f"To use: {name}, please set the flag --device to cuda:{gpu}")
         else:
-            print("CUDA is not available! Running on CPU ...")
+            print("CUDA is not available!")
+        print("Checking for CPU optimisation...")
+        num_cpu_cores = os.cpu_count()
+        print(f"Maximum number of CPU cores: {num_cpu_cores}, use --workers {num_cpu_cores} to use the maximum number of CPU cores for data loading.")
+        exit()
 
+    if args.verbose:
+        print(format_args_to_markdown_table(args))
 
     ## 1. First, we load our data
     xtrain, xtest, ytrain, y_test = load_data()
@@ -87,6 +100,7 @@ def main(args):
     ## 4. Train and evaluate the method
 
     # Fit (:=train) the method on the training data
+    start_time = time.time()
     preds_train = method_obj.fit(xtrain, ytrain)
 
     # Predict on unseen data
@@ -95,7 +109,7 @@ def main(args):
     ## Report results: performance on train and valid/test sets
     acc = accuracy_fn(preds_train, ytrain)
     macrof1 = macrof1_fn(preds_train, ytrain)
-    print(f"\nTrain set: accuracy = {acc:.3f}% - F1-score = {macrof1:.6f}")
+    print(f"\nTrain set: accuracy = {acc:.3f}% - F1-score = {macrof1:.6f} - Training time = {time.time()-start_time:.2f}s")
 
 
     ## As there are no test dataset labels, check your model accuracy on validation dataset.
@@ -168,9 +182,10 @@ if __name__ == '__main__':
     parser.add_argument('--nn_type', default="mlp",
                         help="which network architecture to use, it can be 'mlp' | 'transformer' | 'cnn'")
     parser.add_argument('--nn_batch_size', type=int, default=64, help="batch size for NN training")
-    parser.add_argument('--check_gpu', action="store_true", default=False, help="whether to check the GPU")
+    parser.add_argument('--check_optimisation', action="store_true", default=False, help="Check what optimisations are possible, run this flag by itself")
     parser.add_argument('--device', type=str, default="cpu",
                         help="Device to use for the training, it can be 'cpu' | 'cuda' | 'mps', with multiple GPUs, add :NUM")
+    parser.add_argument('--workers', type=int, default=0, help="number of workers to use for data loading, use optimisation flag to check the max")
 
 
     parser.add_argument('--lr', type=float, default=1e-5, help="learning rate for methods with learning rate")
