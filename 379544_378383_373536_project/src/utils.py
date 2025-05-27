@@ -129,3 +129,103 @@ def mse_fn(pred,gt):
     loss = (pred-gt)**2
     loss = np.mean(loss)
     return loss
+
+
+def augment_data(images, labels, allow_rotations=True, flip_horizontal=True, flip_vertical=False):
+    """
+    Augments image data with random 90-degree rotations and flips using only NumPy.
+
+    Arguments:
+        images (np.ndarray): Original training images. Expected shape (N, H, W, C) or (N, C, H, W).
+        labels (np.ndarray): Corresponding labels (N,).
+        allow_rotations (bool): Whether to apply random 90, 180, or 270 degree rotations.
+        flip_horizontal (bool): Whether to apply random horizontal flips.
+        flip_vertical (bool): Whether to apply random vertical flips.
+
+    Returns:
+        augmented_images (np.ndarray): Augmented images.
+        augmented_labels (np.ndarray): Corresponding labels for augmented images.
+    """
+    augmented_images_list = []
+    augmented_labels_list = []
+
+    if images.ndim == 4:
+        if images.shape[1] < images.shape[2] and images.shape[1] < images.shape[3]:
+            is_channels_first = True
+            axes_for_rotation = (2, 3)
+            h_axis = 2
+            w_axis = 3
+        else:
+            is_channels_first = False
+            axes_for_rotation = (1, 2)
+            h_axis = 1
+            w_axis = 2
+    elif images.ndim == 3:
+        is_channels_first = False
+        axes_for_rotation = (1, 2)
+        h_axis = 1
+        w_axis = 2
+    else:
+        print("Warning: Unexpected image dimensions for augmentation. Skipping augmentation.")
+        return images, labels
+
+    for i in range(images.shape[0]):
+        image = images[i]
+        label = labels[i]
+
+        augmented_images_list.append(image)
+        augmented_labels_list.append(label)
+
+        if allow_rotations:
+            k = np.random.randint(1, 4)
+
+            if image.ndim == 3 and not is_channels_first:
+                rotated_image = np.rot90(image, k, axes=(0, 1))
+            elif image.ndim == 3 and is_channels_first:
+                rotated_image = np.rot90(image, k, axes=(1, 2))
+            elif image.ndim == 2:
+                rotated_image = np.rot90(image, k, axes=(0, 1))
+            else:
+                rotated_image = image
+
+            augmented_images_list.append(rotated_image)
+            augmented_labels_list.append(label)
+
+        if flip_horizontal:
+            if np.random.rand() > 0.5:
+                if image.ndim == 3 and not is_channels_first:
+                    flipped_image = image[:, ::-1, :]
+                elif image.ndim == 3 and is_channels_first:
+                    flipped_image = image[:, :, ::-1]
+                elif image.ndim == 2:
+                    flipped_image = image[:, ::-1]
+                else:
+                    flipped_image = image
+                augmented_images_list.append(flipped_image)
+                augmented_labels_list.append(label)
+
+        if flip_vertical:
+            if np.random.rand() > 0.5:
+                if image.ndim == 3 and not is_channels_first:
+                    flipped_image = image[::-1, :, :]
+                elif image.ndim == 3 and is_channels_first:
+                    flipped_image = image[:, ::-1, :]
+                elif image.ndim == 2:
+                    flipped_image = image[::-1, :, :]
+                else:
+                    flipped_image = image
+                augmented_images_list.append(flipped_image)
+                augmented_labels_list.append(label)
+
+        """
+        noise = np.random.normal(0, 0.05, image.shape)
+        noisy_image = np.clip(image + noise, 0, 1)
+        augmented_images_list.append(noisy_image)
+        augmented_labels_list.append(label)
+        """
+        factor = 0.8 + 0.4 * np.random.rand()
+        bright_image = np.clip(image * factor, 0, 1)
+        augmented_images_list.append(bright_image)
+        augmented_labels_list.append(label)
+
+    return np.array(augmented_images_list), np.array(augmented_labels_list)

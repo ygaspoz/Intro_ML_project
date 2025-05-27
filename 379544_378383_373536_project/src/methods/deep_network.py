@@ -65,7 +65,7 @@ class CNN(nn.Module):
     It should use at least one convolutional layer.
     """
 
-    def __init__(self, input_channels, n_classes, dim_x = 28, dim_y = 28, filters = (128, 1024, 2048), kernel_size = 3, features = (128, 64)):
+    def __init__(self, input_channels, n_classes, dim_x = 28, dim_y = 28, filters = (128, 256, 512, 1024), kernel_size = 3, features = (128, 64)):
         """
         Initialize the network.
 
@@ -75,6 +75,8 @@ class CNN(nn.Module):
         Arguments:
             input_channels (int): number of channels in the input
             n_classes (int): number of classes to predict
+
+        Highest acc for validation is using the following command: python3 main.py --nn_type cnn --device cuda:0 --max_iters 200 --workers 8 --verbose --lr 0.001 --augment_data --aug_allow_rotation --aug_flip_v --nn_batch_size 16
         """
         super(CNN, self).__init__()
 
@@ -86,35 +88,45 @@ class CNN(nn.Module):
         self.dim_y = dim_y
         self.n_classes = n_classes
         self.features = features
+
         self.conv2d1 = nn.Conv2d(in_channels=self.input_channels,
                                  out_channels=self.filters[0],
                                  kernel_size=self.kernel_size,
                                  padding=self.padding)
         self.bn1 = nn.BatchNorm2d(self.filters[0])
+
         self.conv2d2 = nn.Conv2d(in_channels=self.filters[0],
                                  out_channels=self.filters[1],
                                  kernel_size=self.kernel_size,
                                  padding=self.padding)
         self.bn2 = nn.BatchNorm2d(self.filters[1])
+
         self.conv2d3 = nn.Conv2d(in_channels=self.filters[1],
                                  out_channels=self.filters[2],
                                  kernel_size=self.kernel_size,
                                  padding=self.padding)
         self.bn3 = nn.BatchNorm2d(self.filters[2])
 
+        self.conv2d4 = nn.Conv2d(in_channels=self.filters[2],
+                                 out_channels=self.filters[3],
+                                 kernel_size=self.kernel_size,
+                                 padding=self.padding)
+        self.bn4 = nn.BatchNorm2d(self.filters[3])
 
-        self.dim = self.dim_x // ((self.kernel_size - 1) ** 3)
-        self.in_features = self.dim * self.dim * self.filters[2]
+
+
+        self.dim = self.dim_x // ((self.kernel_size - 1) ** 4)
+        self.in_features = self.dim * self.dim * self.filters[3]
 
         self.fc1 = nn.Linear(in_features=self.in_features, out_features=self.features[0])
         self.bn_fc1 = nn.BatchNorm1d(self.features[0])
         self.do1 = nn.Dropout(p=0.7)
-        """
+
         self.fc2 = nn.Linear(in_features=self.features[0], out_features=self.features[1])
         self.bn_fc2 = nn.BatchNorm1d(self.features[1])
-        self.do2 = nn.Dropout(p=0.5)
-        """
-        self.fc3 = nn.Linear(in_features=self.features[0], out_features=self.n_classes)
+        self.do2 = nn.Dropout(p=0.7)
+
+        self.fc3 = nn.Linear(in_features=self.features[1], out_features=self.n_classes)
 
     def forward(self, x):
         """
@@ -141,6 +153,11 @@ class CNN(nn.Module):
         x = F.relu(x)
         x = F.max_pool2d(x, kernel_size=self.kernel_size - 1)
 
+        x = self.conv2d4(x)
+        x = self.bn4(x)
+        x = F.relu(x)
+        x = F.max_pool2d(x, kernel_size=self.kernel_size - 1)
+
         x = torch.flatten(x, 1)
 
         x = self.fc1(x)
@@ -148,12 +165,10 @@ class CNN(nn.Module):
         x = F.relu(x)
         x = self.do1(x)
 
-        """
         x = self.fc2(x)
         x = self.bn_fc2(x)
         x = F.relu(x)
         x = self.do2(x)
-        """
 
         x = self.fc3(x)
         return x
