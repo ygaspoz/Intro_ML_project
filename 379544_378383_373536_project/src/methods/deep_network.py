@@ -65,7 +65,7 @@ class CNN(nn.Module):
     It should use at least one convolutional layer.
     """
 
-    def __init__(self, input_channels, n_classes, dim_x = 28, dim_y = 28, filters = (128, 256, 512, 1024), kernel_size = 3, features = (128, 64)):
+    def __init__(self, input_channels, n_classes, dim_x = 28, dim_y = 28, filters = (128, 256, 512, 1024), kernel_size = 3, features = (256, 128)):
         """
         Initialize the network.
 
@@ -120,11 +120,11 @@ class CNN(nn.Module):
 
         self.fc1 = nn.Linear(in_features=self.in_features, out_features=self.features[0])
         self.bn_fc1 = nn.BatchNorm1d(self.features[0])
-        self.do1 = nn.Dropout(p=0.7)
+        self.do1 = nn.Dropout(p=0.3)
 
         self.fc2 = nn.Linear(in_features=self.features[0], out_features=self.features[1])
         self.bn_fc2 = nn.BatchNorm1d(self.features[1])
-        self.do2 = nn.Dropout(p=0.7)
+        self.do2 = nn.Dropout(p=0.3)
 
         self.fc3 = nn.Linear(in_features=self.features[1], out_features=self.n_classes)
 
@@ -200,7 +200,7 @@ class Trainer(object):
         self.criterion = nn.CrossEntropyLoss()
         #self.optimizer = torch.optim.SGD(self.model.parameters(), lr=self.lr)
         #self.optimizer = torch.optim.Adam(self.model.parameters(), lr=self.lr)
-        self.optimizer = torch.optim.AdamW(self.model.parameters(), lr=self.lr, weight_decay=1e-5)
+        self.optimizer = torch.optim.AdamW(self.model.parameters(), lr=self.lr, weight_decay=1e-4, betas=(0.9, 0.999), eps=1e-8)
 
         # Optimizations for faster training
         self.device = device

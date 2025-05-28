@@ -217,12 +217,6 @@ def augment_data(images, labels, allow_rotations=True, flip_horizontal=True, fli
                 augmented_images_list.append(flipped_image)
                 augmented_labels_list.append(label)
 
-        """
-        noise = np.random.normal(0, 0.05, image.shape)
-        noisy_image = np.clip(image + noise, 0, 1)
-        augmented_images_list.append(noisy_image)
-        augmented_labels_list.append(label)
-        """
         factor = 0.8 + 0.4 * np.random.rand()
         bright_image = np.clip(image * factor, 0, 1)
         augmented_images_list.append(bright_image)
