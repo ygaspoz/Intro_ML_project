@@ -101,35 +101,53 @@ def main(args):
 
     # Prepare the model (and data) for Pytorch
     n_classes = get_n_classes(ytrain)
+
     if args.grid_search_lr_batch:
         import seaborn as sns
         import matplotlib.pyplot as plt
 
-        learning_rates = [1e-4, 1e-3, 1e-2, 1e-1]
+        learning_rates = [1e-5, 1e-4, 1e-3]
         batch_sizes = [16, 32, 64, 128]
-        results = np.zeros((len(batch_sizes), len(learning_rates)))  # Rows = batch size, Cols = learning rate
+        hidden_layer_configs = [[512, 256, 128], [256, 128], [128]] 
 
-        for i, bs in enumerate(batch_sizes):
-            for j, lr in enumerate(learning_rates):
-                print(f"\n Training with batch size = {bs}, learning rate = {lr}")
+        results = np.zeros((len(batch_sizes), len(learning_rates))) 
+        best_acc = 0
+        best_config = {}
 
-                if args.nn_type == "mlp":
-                    model = MLP(input_size=xtrain.shape[1], n_classes=n_classes)
-                else:
-                    model = CNN(n_classes=n_classes, input_channels=3)
+        for hidden_layers in hidden_layer_configs:
+            print(f"\nTesting hidden layer configuration: {hidden_layers}")
+            for i, bs in enumerate(batch_sizes):
+                for j, lr in enumerate(learning_rates):
+                    print(f"\n Training with batch size = {bs}, learning rate = {lr}")
 
-                model.to(args.device)
-                trainer = Trainer(model, lr=lr, epochs=args.max_iters, batch_size=bs,
-                                  device=args.device, verbose=False)
+                    if args.nn_type == "mlp":
+                        model = MLP(input_size=xtrain.shape[1],
+                                    n_classes=n_classes,
+                                    dimensions=hidden_layers)
+                    else:
+                        model = CNN(n_classes=n_classes, input_channels=3)
 
-                trainer.fit(xtrain, ytrain)
-                preds_val = trainer.predict(xtest)
-                acc_val = accuracy_fn(preds_val, y_test)
+                    model.to(args.device)
+                    trainer = Trainer(model, lr=lr, epochs=args.max_iters, batch_size=bs,
+                                    device=args.device, verbose=False)
 
-                results[i, j] = acc_val
-                print(f"Validation Accuracy = {acc_val:.2f}%")
+                    trainer.fit(xtrain, ytrain)
+                    preds_val = trainer.predict(xtest)
+                    acc_val = accuracy_fn(preds_val, y_test)
 
-        # Plot heatmap
+                    print(f"Validation Accuracy = {acc_val:.2f}%")
+
+                    if acc_val > best_acc:
+                        best_acc = acc_val
+                        best_config = {
+                            "hidden_layers": hidden_layers,
+                            "batch_size": bs,
+                            "learning_rate": lr
+                        }
+
+                    results[i, j] = acc_val
+
+        # Plot heatmap 
         plt.figure(figsize=(8, 6))
         sns.heatmap(results, annot=True, fmt=".1f", cmap="viridis",
                     xticklabels=learning_rates, yticklabels=batch_sizes)
@@ -139,17 +157,12 @@ def main(args):
         plt.tight_layout()
         plt.show()
 
-        # Print best combo
-        best_idx = np.unravel_index(np.argmax(results), results.shape)
-        best_bs = batch_sizes[best_idx[0]]
-        best_lr = learning_rates[best_idx[1]]
-        best_acc = results[best_idx]
-        print(f"\n Best combination: Batch Size = {best_bs}, Learning Rate = {best_lr} → Accuracy = {best_acc:.2f}%")
-        exit()
+        print(f"\nBest configuration:\n{best_config}\nBest accuracy: {best_acc:.2f}%")
+
 
     # Note: you might need to reshape the data depending on the network you use!
     if args.nn_type == "mlp":
-        model = MLP(input_size=xtrain.shape[1], n_classes=n_classes)
+        model = MLP(input_size=xtrain.shape[1], n_classes=n_classes, dimensions=[512, 256, 128])
     elif args.nn_type == "cnn":
         model = CNN(n_classes=n_classes, input_channels=3)
 
