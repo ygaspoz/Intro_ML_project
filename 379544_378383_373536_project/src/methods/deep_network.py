@@ -181,7 +181,7 @@ class Trainer(object):
     It will also serve as an interface between numpy and pytorch.
     """
 
-    def __init__(self, model, lr, epochs, batch_size, device=torch.device("cpu"), verbose=False, workers=0):
+    def __init__(self, model, lr, epochs, batch_size, device=torch.device("cpu"), verbose=False, workers=0, pin_memory=False):
         """
         Initialize the trainer object for a given model.
 
@@ -196,6 +196,7 @@ class Trainer(object):
         self.model = model
         self.batch_size = batch_size
         self.verbose = verbose
+        self.pin_memory = pin_memory
 
         self.criterion = nn.CrossEntropyLoss()
         #self.optimizer = torch.optim.SGD(self.model.parameters(), lr=self.lr)
