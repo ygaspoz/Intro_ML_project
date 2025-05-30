@@ -9,6 +9,7 @@ import time
 from src.data import load_data
 from src.methods.deep_network import MLP, CNN, Trainer
 from src.utils import normalize_fn, append_bias_term, accuracy_fn, macrof1_fn, get_n_classes, train_test_split, augment_data
+from src.tuning.tuning import grid_search_batch_lr
 import os
 
 
@@ -103,66 +104,11 @@ def main(args):
     n_classes = get_n_classes(ytrain)
 
     if args.grid_search_lr_batch:
-        import seaborn as sns
-        import matplotlib.pyplot as plt
-
-        learning_rates = [1e-5, 1e-4, 1e-3]
-        batch_sizes = [16, 32, 64, 128]
-        hidden_layer_configs = [[512, 256, 128], [256, 128], [128]] 
-
-        results = np.zeros((len(batch_sizes), len(learning_rates))) 
-        best_acc = 0
-        best_config = {}
-
-        for hidden_layers in hidden_layer_configs:
-            print(f"\nTesting hidden layer configuration: {hidden_layers}")
-            for i, bs in enumerate(batch_sizes):
-                for j, lr in enumerate(learning_rates):
-                    print(f"\n Training with batch size = {bs}, learning rate = {lr}")
-
-                    if args.nn_type == "mlp":
-                        model = MLP(input_size=xtrain.shape[1],
-                                    n_classes=n_classes,
-                                    dimensions=hidden_layers)
-                    else:
-                        model = CNN(n_classes=n_classes, input_channels=3)
-
-                    model.to(args.device)
-                    trainer = Trainer(model, lr=lr, epochs=args.max_iters, batch_size=bs,
-                                    device=args.device, verbose=False)
-
-                    trainer.fit(xtrain, ytrain)
-                    preds_val = trainer.predict(xtest)
-                    acc_val = accuracy_fn(preds_val, y_test)
-
-                    print(f"Validation Accuracy = {acc_val:.2f}%")
-
-                    if acc_val > best_acc:
-                        best_acc = acc_val
-                        best_config = {
-                            "hidden_layers": hidden_layers,
-                            "batch_size": bs,
-                            "learning_rate": lr
-                        }
-
-                    results[i, j] = acc_val
-
-        # Plot heatmap 
-        plt.figure(figsize=(8, 6))
-        sns.heatmap(results, annot=True, fmt=".1f", cmap="viridis",
-                    xticklabels=learning_rates, yticklabels=batch_sizes)
-        plt.xlabel("Learning Rate")
-        plt.ylabel("Batch Size")
-        plt.title("Validation Accuracy (%) — Grid Search")
-        plt.tight_layout()
-        plt.show()
-
-        print(f"\nBest configuration:\n{best_config}\nBest accuracy: {best_acc:.2f}%")
-
+        grid_search_batch_lr(xtrain, xtest, ytrain, y_test, args, n_classes)
 
     # Note: you might need to reshape the data depending on the network you use!
     if args.nn_type == "mlp":
-        model = MLP(input_size=xtrain.shape[1], n_classes=n_classes, dimensions=[512, 256, 128])
+        model = MLP(input_size=xtrain.shape[1], n_classes=n_classes, dimensions=args.dimensions)
     elif args.nn_type == "cnn":
         model = CNN(n_classes=n_classes, input_channels=3)
 
@@ -191,13 +137,8 @@ def main(args):
 
     ## As there are no test dataset labels, check your model accuracy on validation dataset.
     # You can check your model performance on test set by submitting your test set predictions on the AIcrowd competition.
-    if args.test:
-        true_labels = y_test     # from your load_data() unpacking
-    else:
-        true_labels = y_test      # from your train_test_split()
-
-    acc = accuracy_fn(preds, true_labels)
-    macrof1 = macrof1_fn(preds, true_labels)
+    acc = accuracy_fn(preds, y_test)
+    macrof1 = macrof1_fn(preds, y_test)
     print(f"Validation set:  accuracy = {acc:.3f}% - F1-score = {macrof1:.6f}")
 
 
@@ -221,8 +162,8 @@ if __name__ == '__main__':
     parser.add_argument('--workers', type=int, default=0, help="number of workers to use for data loading, use optimisation flag to check the max")
 
 
-    parser.add_argument('--lr', type=float, default=1e-5, help="learning rate for methods with learning rate")
-    parser.add_argument('--max_iters', type=int, default=100, help="max iters for methods which are iterative")
+    parser.add_argument('--lr', type=float, help="learning rate for methods with learning rate")
+    parser.add_argument('--max_iters', type=int, help="max iters for methods which are iterative")
     parser.add_argument('--test', action="store_true",
                         help="train on whole training data and evaluate on the test data, otherwise use a validation set")
     parser.add_argument('--verbose', action="store_true", help="print training progress per epoch")
@@ -235,8 +176,25 @@ if __name__ == '__main__':
                         help="Enable horizontal flip for augmentation")
     parser.add_argument('--aug_flip_v', action="store_true", default=False,
                         help="Enable vertical flip for augmentation")
+    parser.add_argument('--dimensions', type=int, nargs='+', default=[512, 256, 128],
+                    help="List of hidden layer sizes for MLP, e.g., --dimensions 512 256 128")
 
     # "args" will keep in memory the arguments and their values,
     # which can be accessed as "args.data", for example.
     args = parser.parse_args()
+
+    default_values = {
+        "mlp": {"lr": 1e-3, "nn_batch_size": 128, "max_iters": 70},
+        "cnn": {"lr": 1e-3, "nn_batch_size": 32, "max_iters": 10}
+    }
+
+    if args.lr == None:
+        args.lr = default_values[args.nn_type]["lr"]
+
+    if args.nn_batch_size == None:
+        args.nn_batch_size = default_values[args.nn_type]["nn_batch_size"]
+
+    if args.max_iters == None:
+        args.max_iters = default_values[args.nn_type]["max_iters"]
+
     main(args)
