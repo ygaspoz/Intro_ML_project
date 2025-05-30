@@ -155,7 +155,7 @@ if __name__ == '__main__':
     parser.add_argument('--data', default="dataset", type=str, help="path to your dataset")
     parser.add_argument('--nn_type', default="mlp",
                         help="which network architecture to use, it can be 'mlp' | 'transformer' | 'cnn'")
-    parser.add_argument('--nn_batch_size', type=int, default=64, help="batch size for NN training")
+    parser.add_argument('--nn_batch_size', type=int, help="batch size for NN training")
     parser.add_argument('--check_optimisation', action="store_true", default=False, help="Check what optimisations are possible, run this flag by itself")
     parser.add_argument('--device', type=str, default="cpu",
                         help="Device to use for the training, it can be 'cpu' | 'cuda' | 'mps', with multiple GPUs, add :NUM")
