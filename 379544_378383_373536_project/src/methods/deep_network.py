@@ -199,8 +199,6 @@ class Trainer(object):
         self.pin_memory = pin_memory
 
         self.criterion = nn.CrossEntropyLoss()
-        #self.optimizer = torch.optim.SGD(self.model.parameters(), lr=self.lr)
-        #self.optimizer = torch.optim.Adam(self.model.parameters(), lr=self.lr)
         self.optimizer = torch.optim.AdamW(self.model.parameters(), lr=self.lr, weight_decay=1e-4, betas=(0.9, 0.999), eps=1e-8)
 
         # Optimizations for faster training

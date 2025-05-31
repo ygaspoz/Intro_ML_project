@@ -9,7 +9,7 @@ import time
 from src.data import load_data
 from src.methods.deep_network import MLP, CNN, Trainer
 from src.utils import normalize_fn, append_bias_term, accuracy_fn, macrof1_fn, get_n_classes, train_test_split, augment_data
-from src.tuning.tuning import grid_search_batch_lr
+from src.helpers.tuning import grid_search_batch_lr
 import os
 
 
@@ -23,6 +23,7 @@ def main(args):
                           of this file). Their value can be accessed as "args.argument".
     """
 
+    # Enable GPU
     if args.check_optimisation:
         print("Checking for GPU optimisation...")
         if torch.cuda.is_available():
@@ -103,10 +104,6 @@ def main(args):
     # Prepare the model (and data) for Pytorch
     n_classes = get_n_classes(ytrain)
 
-    if args.grid_search_lr_batch:
-        grid_search_batch_lr(xtrain, xtest, ytrain, y_test, args, n_classes)
-
-    # Note: you might need to reshape the data depending on the network you use!
     if args.nn_type == "mlp":
         model = MLP(input_size=xtrain.shape[1], n_classes=n_classes, dimensions=args.dimensions)
     elif args.nn_type == "cnn":
@@ -121,6 +118,8 @@ def main(args):
 
 
     ## 4. Train and evaluate the method
+    if args.grid_search_lr_batch:
+        grid_search_batch_lr(xtrain, xtest, ytrain, y_test, args, n_classes)
 
     # Fit (:=train) the method on the training data
     start_time = time.time()
@@ -185,7 +184,7 @@ if __name__ == '__main__':
 
     default_values = {
         "mlp": {"lr": 1e-3, "nn_batch_size": 128, "max_iters": 70},
-        "cnn": {"lr": 1e-3, "nn_batch_size": 32, "max_iters": 10}
+        "cnn": {"lr": 1e-3, "nn_batch_size": 200, "max_iters": 200}
     }
 
     if args.lr == None:
