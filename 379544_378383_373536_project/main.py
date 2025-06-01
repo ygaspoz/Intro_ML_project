@@ -138,8 +138,14 @@ def main(args):
 
     ## As there are no test dataset labels, check your model accuracy on validation dataset.
     # You can check your model performance on test set by submitting your test set predictions on the AIcrowd competition.
-    acc = accuracy_fn(preds, y_test)
-    macrof1 = macrof1_fn(preds, y_test)
+    
+    if args.test:
+        true_labels = y_test
+    else:
+        true_labels = ytest
+
+    acc = accuracy_fn(preds, true_labels)
+    macrof1 = macrof1_fn(preds, true_labels)
     print(f"Validation set:  accuracy = {acc:.3f}% - F1-score = {macrof1:.6f}")
 
 
