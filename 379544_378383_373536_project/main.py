@@ -43,7 +43,9 @@ def main(args):
         print(format_args_to_markdown_table(args))
 
     ## 1. First, we load our data
-    xtrain, xtest, ytrain, y_test = load_data(args.test)
+    xtrain, xtest, ytrain, y_test = load_data()
+    if not args.test:
+        xtrain, xtest, ytrain, ytest = train_test_split(xtrain, ytrain, test_size=0.1, random_state=42)
 
     if args.augment_data:  #
         print(f"Original training data shape: {xtrain.shape}, labels: {ytrain.shape}")
