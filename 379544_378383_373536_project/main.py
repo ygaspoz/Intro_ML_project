@@ -43,7 +43,7 @@ def main(args):
         print(format_args_to_markdown_table(args))
 
     ## 1. First, we load our data
-    xtrain, xtest, ytrain, y_test = load_data()
+    xtrain, xtest, ytrain, y_test = load_data(args.test)
 
     if args.augment_data:  #
         print(f"Original training data shape: {xtrain.shape}, labels: {ytrain.shape}")
