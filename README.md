@@ -25,3 +25,8 @@ The barebone structure of this project has been given by the CS-233 Team at EPFL
 Two papers have been written to support this project. They can be found in their respective directories:
 - Paper for `MS1`: Located in the `MS1` directory.
 - Paper for `MS2`: Located in the `MS2` directory.
+
+## Project Grade
+- Milestone 1: 10/10
+- Milestone 2: 9.5/10
+- Total: 19.5/20
