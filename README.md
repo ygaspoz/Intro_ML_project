@@ -23,8 +23,8 @@ The barebone structure of this project has been given by the CS-233 Team at EPFL
 ## Supporting Papers
 
 Two papers have been written to support this project. They can be found in their respective directories:
-- Paper for `MS1`: Located in the `MS1` directory.
-- Paper for `MS2`: Located in the `MS2` directory.
+- [Paper](https://github.com/ygaspoz/Intro_ML_project/blob/main/MS1/report.pdf) for `MS1`: Located in the `MS1` directory.
+- [Paper](https://github.com/ygaspoz/Intro_ML_project/blob/main/MS2/report.pdf) for `MS2`: Located in the `MS2` directory.
 
 ## Project Grade
 - Milestone 1: 10/10
